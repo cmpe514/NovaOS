@@ -4,6 +4,8 @@
 //	novad [serve] [flags]     run the daemon (default)
 //	novad login-url [flags]   print the one-time sign-in URL for the shell browser
 //	novad wait [flags]        wait until /healthz answers (used by the session launcher)
+//	novad bar                 swaybar status command: Home button + clock
+//	novad watch               shows the bar off the shell workspace; returns home from an empty browser workspace
 //	novad version
 package main
 
@@ -77,10 +79,14 @@ func main() {
 		os.Exit(loginURL(args))
 	case "wait":
 		os.Exit(wait(args))
+	case "bar":
+		os.Exit(bar(args))
+	case "watch":
+		os.Exit(watch(args))
 	case "version":
 		fmt.Printf("novad %s (%s)\n", version, brand)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command %q (serve, login-url, wait, version)\n", cmd)
+		fmt.Fprintf(os.Stderr, "unknown command %q (serve, login-url, wait, bar, watch, version)\n", cmd)
 		os.Exit(2)
 	}
 }

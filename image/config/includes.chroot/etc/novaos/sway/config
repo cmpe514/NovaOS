@@ -1,0 +1,80 @@
+# %%NAME%% kiosk session for sway (Wayland). Nothing from sway's default config is included: there is no
+# terminal, no launcher, no exit key — only the shell, the web browser and a way home.
+#
+#   workspace 1  the %%NAME%% shell (Chromium app window, fullscreen)
+#   workspace 2  websites opened from the Browser app (Chromium, separate profile) + a bottom bar with Home
+#
+# Ways back to the shell, whatever is on screen: the Super (Windows) key, the keyboard Home-page key,
+# the "Home" button in the bottom bar, or simply closing the browser (`novad watch` returns home).
+
+# Chromium names an --app window after the app's origin and profile ("chrome-127.0.0.1__auth-Default"),
+# ignoring --class; normal browser windows use --class. Both were checked with tests/session/session-test.sh.
+set $shell app_id="^chrome-127\.0\.0\.1__"
+set $web   app_id="^novaos-web$"
+
+xwayland disable
+default_border none
+default_floating_border none
+hide_edge_borders --i3 both
+titlebar_border_thickness 0
+titlebar_padding 1
+focus_follows_mouse no
+focus_on_window_activation focus
+mouse_warping none
+popup_during_fullscreen smart
+output * bg #080d18 solid_color
+
+# Cursor: hidden while typing and after a few seconds of inactivity (touch screens never see one).
+seat * hide_cursor 6000
+seat * hide_cursor when-typing enable
+
+# Input defaults that suit laptops and touchpads.
+input type:touchpad {
+    tap enabled
+    natural_scroll enabled
+    dwt enabled
+}
+input type:keyboard xkb_numlock enabled
+include /etc/novaos/sway/config.d/*.conf
+
+assign [$shell] workspace number 1
+assign [$web]   workspace number 2
+# The shell is not made fullscreen (Chromium would overlay an "exit full screen" bubble): it is the only
+# window on workspace 1 and `novad watch` hides the bar there, which gives the same edge-to-edge result.
+for_window [$shell] border none, inhibit_idle visible
+for_window [$web]   focus
+# Anything unexpected (a dialog from some other process) goes next to the browser, never over the shell.
+for_window [app_id="^(?!chrome-127\.0\.0\.1__).*"] move container to workspace number 2, focus
+
+bindsym --release Super_L workspace number 1
+bindsym --release Super_R workspace number 1
+bindsym XF86HomePage workspace number 1
+bindsym Mod4+Tab workspace back_and_forth
+bindsym XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+
+bar {
+    id novaos
+    position bottom
+    mode invisible
+    height 44
+    workspace_buttons no
+    binding_mode_indicator no
+    tray_output none
+    font pango:DM Sans, DejaVu Sans 13
+    # No '#' here: sway strips quotes and runs the line with sh, where '#' would start a comment.
+    status_command /usr/bin/novad bar --accent %%ACCENT_HEX%%
+    status_padding 6
+    status_edge_padding 12
+    colors {
+        background #10213bf2
+        statusline #ffffff
+        separator  #10213b
+    }
+}
+
+exec /usr/lib/novaos/novad-run
+exec /usr/bin/novad watch
+exec /usr/lib/novaos/shell
+exec /usr/lib/novaos/osk

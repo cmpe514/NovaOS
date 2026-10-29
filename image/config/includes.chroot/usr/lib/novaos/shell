@@ -1,0 +1,26 @@
+#!/bin/bash
+# Runs the %%NAME%% shell: Chromium in app mode with a throw-away per-boot profile, signed in to novad with
+# a one-time code. Restarted if it crashes or is closed, so the home screen always comes back.
+set -uo pipefail
+profile="${XDG_RUNTIME_DIR:?}/novaos/shell-profile"
+flags=(
+  --class=novaos-shell
+  --user-data-dir="$profile"
+  --ozone-platform=wayland
+  --enable-wayland-ime
+  --no-first-run --no-default-browser-check --noerrdialogs
+  --disable-session-crashed-bubble --disable-infobars
+  --disable-background-networking --disable-component-update --disable-sync --no-pings
+  --disable-breakpad --disable-domain-reliability
+  --disable-features=Translate,MediaRouter,OptimizationHints,AutofillServerCommunication,CertificateTransparencyComponentUpdater,InterestFeedContentSuggestions
+  --password-store=basic
+  --overscroll-history-navigation=0 --disable-pinch --hide-scrollbars
+  --check-for-update-interval=31536000
+)
+/usr/bin/novad wait --listen 127.0.0.1:%%PORT%% --timeout 90s || echo "novad is slow to start; trying anyway" >&2
+while true; do
+  url="$(/usr/bin/novad login-url --listen 127.0.0.1:%%PORT%%)" || { sleep 1; continue; }
+  chromium "${flags[@]}" --app="$url"
+  echo "shell browser exited ($?); restarting" >&2
+  sleep 1
+done

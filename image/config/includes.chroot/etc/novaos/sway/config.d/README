@@ -1,0 +1,4 @@
+Drop-in sway configuration for this device (keyboard layout, display scale, rotation), e.g.
+  input type:keyboard xkb_layout "de"
+  output Virtual-1 scale 1.25
+Only files ending in .conf are read, in alphabetical order.

@@ -29,6 +29,7 @@ func (s *server) api() http.Handler {
 	const quick, slow = 15 * time.Second, 45 * time.Second
 
 	route("GET /api/session", quick, s.session)
+	route("POST /api/ready", quick, s.ready)
 	route("GET /api/settings", quick, func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"settings": s.Settings.UI()})
 	})
@@ -109,6 +110,19 @@ func (s *server) session(w http.ResponseWriter, r *http.Request) {
 		"persistent": st.Storage.Persistent,
 		"features":   map[string]bool{"documents": s.Docs != nil},
 	})
+}
+
+// ready is called once the shell has rendered. The NOVAOS_READY line is what the QEMU smoke test and
+// boot-time measurements wait for (novaos-ready-marker.service copies it to the serial console).
+func (s *server) ready(w http.ResponseWriter, r *http.Request) {
+	s.readyOnce.Do(func() {
+		uptime := "?"
+		if b, err := os.ReadFile("/proc/uptime"); err == nil {
+			uptime = strings.Fields(string(b))[0]
+		}
+		s.Log.Printf("NOVAOS_READY shell rendered %s s after boot", uptime)
+	})
+	writeJSON(w, 200, map[string]bool{"ok": true})
 }
 
 func (s *server) putSettings(w http.ResponseWriter, r *http.Request) {

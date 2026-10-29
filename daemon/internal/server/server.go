@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cmpe514/novaos/daemon/internal/auth"
@@ -55,8 +56,9 @@ type Options struct {
 
 type server struct {
 	Options
-	origins map[string]bool
-	hosts   map[string]bool
+	origins   map[string]bool
+	hosts     map[string]bool
+	readyOnce sync.Once
 }
 
 const csp = "default-src 'self'; script-src 'self'; style-src 'self'; style-src-attr 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; media-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'"

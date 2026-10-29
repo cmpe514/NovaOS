@@ -8,7 +8,11 @@
   window.novaSystem.load().catch(error=>console.error('NovaOS: system state unavailable',error)).finally(()=>{
     const script=document.createElement('script');
     script.src='js/app.js';
-    script.onload=()=>{window.novaSystem.attach();document.documentElement.dataset.ready='true'};
+    script.onload=()=>{
+      window.novaSystem.attach();document.documentElement.dataset.ready='true';
+      // Tells novad the home screen is up (boot-time measurement and the QEMU smoke test).
+      if(novaApi.mode==='device')requestAnimationFrame(()=>novaApi.request('POST','/api/ready',{}).catch(()=>{}));
+    };
     document.body.appendChild(script);
   });
 })();

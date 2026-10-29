@@ -4,7 +4,7 @@
     "url": "https://images.pexels.com/photos/6985132/pexels-photo-6985132.jpeg?auto=compress&cs=tinysrgb&w=1920",
     "page": "https://www.pexels.com/photo/6985132/",
     "file": "wallpaper.jpg",
-    "sha256": "",
+    "sha256": "00ad700edd0b662e553ffca3ad375eb212283c9d6290daeeb9def6c84496aa96",
     "alt": "Dynamic gradient with vivid blues and purples, ideal for modern designs.",
     "fallback": "wallpaper.svg",
     "fallbackAlt": "Abstract gradient with vivid blues and purples."
@@ -13,7 +13,7 @@
     "url": "https://images.pexels.com/photos/30052971/pexels-photo-30052971.jpeg?auto=compress&cs=tinysrgb&w=800",
     "page": "https://www.pexels.com/photo/30052971/",
     "file": "photo1.jpg",
-    "sha256": "",
+    "sha256": "1e6a9f7824ff61a6691d23ca73d164ad08b159385176f22f992de6cfd9800893",
     "alt": "Vibrant abstract art featuring a nebula-like texture with a central dark circle, creating a mysterious cosmic effect.",
     "fallback": "photo1.svg",
     "fallbackAlt": "Abstract nebula-like texture with a dark circle at its centre."
@@ -22,7 +22,7 @@
     "url": "https://images.pexels.com/photos/30052973/pexels-photo-30052973.jpeg?auto=compress&cs=tinysrgb&w=800",
     "page": "https://www.pexels.com/photo/30052973/",
     "file": "photo2.jpg",
-    "sha256": "",
+    "sha256": "d40ca7ab1e7616f83c2879b90d281a6b05f70d0494178cc432e7629a69c09afe",
     "alt": "Dynamic abstract swirl with vivid colors and digital textures, creating a futuristic feel.",
     "fallback": "photo2.svg",
     "fallbackAlt": "Abstract swirl of vivid colours."
@@ -31,7 +31,7 @@
     "url": "https://images.pexels.com/photos/40131643/pexels-photo-40131643.jpeg?auto=compress&cs=tinysrgb&w=800",
     "page": "https://www.pexels.com/photo/40131643/",
     "file": "photo3.jpg",
-    "sha256": "",
+    "sha256": "6c1755bc1aa3d614a47abdc84174473f4ebc7f1f23981cd8981b61cf163aa694",
     "alt": "Vibrant swirls of blue and purple smoke creating an abstract and mystical pattern on a dark background.",
     "fallback": "photo3.svg",
     "fallbackAlt": "Swirls of blue and purple smoke on a dark background."

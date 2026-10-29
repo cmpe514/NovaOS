@@ -1,6 +1,8 @@
 #!/bin/bash
 set -uo pipefail
-journalctl -f -n all -o cat _SYSTEMD_UNIT=novaos-session.service | while IFS= read -r line; do
+# Filter by the session user, not by unit: pam_systemd moves the session's processes into a
+# session-cN.scope, so _SYSTEMD_UNIT is not novaos-session.service (seen on the first real boot).
+journalctl -f -n all -o cat _UID=1000 | while IFS= read -r line; do
   case "$line" in
     *NOVAOS_READY*) printf '\r\nNOVAOS_READY%s\r\n' "${line#*NOVAOS_READY}" > /dev/ttyS0; exit 0 ;;
   esac

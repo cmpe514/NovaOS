@@ -207,7 +207,9 @@ Nothing else needs to change.
 | The shell browser opens no connection beyond 127.0.0.1 (net-log) | **VERIFIED** with Playwright's Chromium (Debian's build is assumed to behave the same or better) |
 | QEMU smoke harness (BIOS + UEFI boot, serial marker, screenshot, blank check) | **VERIFIED** on a stand-in GRUB ISO |
 | live-build tree renders with no unresolved placeholders; all shell scripts pass shellcheck | **VERIFIED** |
-| `make iso` produces a bootable ISO; BIOS + UEFI boot to the home screen; persistence across reboot | **UNVERIFIED** here; this is what CI's `iso` job tests |
+| `make iso` produces a bootable ISO (1,145 MiB) | **VERIFIED** in GitHub Actions (Debian live-build in the builder container) |
+| The ISO boots to the NovaOS home screen (QEMU/KVM, direct kernel boot) in 23 s | **VERIFIED** in GitHub Actions (`NOVAOS_READY uptime=23.37s`) |
+| BIOS + UEFI boot through GRUB, persistence across a clean reboot | being verified by CI's `iso` job (`make smoke`) |
 | Builder container, `make doctor` on macOS/Windows | **UNVERIFIED** |
 | Real NetworkManager, BlueZ, PipeWire, logind backlight, udisks2, polkit rules, Plymouth handover, squeekboard | **UNVERIFIED** (command lines unit-tested against stubs) |
 | VirtualBox, VMware, UTM, real hardware, Secure Boot | **UNVERIFIED** |

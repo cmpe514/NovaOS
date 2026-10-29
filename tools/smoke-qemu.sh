@@ -35,6 +35,28 @@ firmware_for() {
   echo "-drive if=pflash,format=raw,readonly=on,file=$code -drive if=pflash,format=raw,file=$vars"
 }
 
+# diagnose NAME — boots the ISO's own kernel and initrd directly (no bootloader) with every systemd
+# message on the serial console, and prints the end of it. Tells "bootloader problem" apart from
+# "the system starts but the session does not".
+diagnose() {
+  need xorriso "sudo apt install xorriso"
+  local d="$tmp/diag" log="$out/$1.diagnostic.serial.log" kernel initrd
+  mkdir -p "$d"
+  echo "----- ISO /live contents -----"
+  xorriso -indev "$iso" -find /live -type f 2>/dev/null | tr -d "'" | head -20
+  kernel="$(xorriso -indev "$iso" -find /live -name 'vmlinuz*' 2>/dev/null | tr -d "'" | head -1)"
+  initrd="$(xorriso -indev "$iso" -find /live -name 'initrd*' 2>/dev/null | tr -d "'" | head -1)"
+  [[ -n "$kernel" && -n "$initrd" ]] || { echo "diagnose: no kernel/initrd under /live in the ISO"; return 0; }
+  xorriso -osirrox on -indev "$iso" -extract "$kernel" "$d/vmlinuz" -extract "$initrd" "$d/initrd" >/dev/null 2>&1 || { echo "diagnose: extraction failed"; return 0; }
+  echo "----- diagnostic boot of $kernel with verbose serial output (150 s) -----"
+  timeout 150 "$qemu" -machine q35 "${accel[@]}" "${cpu[@]}" -smp 2 -m 3072 -kernel "$d/vmlinuz" -initrd "$d/initrd" \
+    -append "boot=live console=tty1 console=ttyS0,115200n8 loglevel=6 systemd.show_status=1 systemd.journald.forward_to_console=1 systemd.log_target=console" \
+    -drive "file=$iso,media=cdrom,readonly=on,if=none,id=cd" -device virtio-scsi-pci -device scsi-cd,drive=cd \
+    -device virtio-vga -display none -nic user,model=virtio-net-pci -serial "file:$log" -no-reboot >/dev/null 2>&1 || true
+  echo "----- last 200 lines of the diagnostic serial console -----"
+  tr -d '\r' < "$log" | grep -av '^\s*$' | tail -n 200 | cut -c1-240
+}
+
 # boot NAME MODE [DISK] — returns once NOVAOS_READY was seen (prints the line) or fails.
 boot() {
   local name="$1" mode="$2" disk="${3:-}" serial="$out/$1.serial.log" qmp="$tmp/$1.qmp" machine=(-machine q35) display=(-device virtio-vga)
@@ -51,8 +73,12 @@ boot() {
   log "$name: booting ($mode, ${accel[*]}), waiting up to ${timeout}s for NOVAOS_READY"
   while ! grep -aq NOVAOS_READY "$serial"; do
     kill -0 "$pid" 2>/dev/null || die "$name: QEMU exited before the home screen came up (serial log: out/smoke/$name.serial.log)"
-    (( $(date +%s) - start < timeout )) || { python3 "$ROOT/tools/qmp.py" "$qmp" screendump "{\"filename\":\"$out/$name.timeout.ppm\"}" >/dev/null 2>&1 || true
-      kill "$pid"; die "$name: no NOVAOS_READY after ${timeout}s (serial log: out/smoke/$name.serial.log)"; }
+    (( $(date +%s) - start < timeout )) || { python3 "$ROOT/tools/qmp.py" "$qmp" screendump "{\"filename\":\"$tmp/$name.timeout.ppm\"}" >/dev/null 2>&1 || true
+      python3 "$ROOT/tools/screen-check.py" "$tmp/$name.timeout.ppm" "$out/$name.timeout.png" 1 || true
+      kill "$pid"; wait "$pid" 2>/dev/null || true
+      echo "----- last 80 lines of the serial console ($name) -----"; tail -n 80 "$serial" | tr -d '\r' | cut -c1-240
+      [[ "${DIAGNOSE:-1}" == 1 ]] && diagnose "$name"
+      die "$name: no NOVAOS_READY after ${timeout}s (serial log: out/smoke/$name.serial.log, screen: out/smoke/$name.timeout.png)"; }
     sleep 2
   done
   local line rest; line="$(grep -a -o 'NOVAOS_READY[^[:cntrl:]]*' "$serial" | head -1)"

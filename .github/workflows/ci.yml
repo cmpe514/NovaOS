@@ -112,6 +112,12 @@ jobs:
         run: make doctor || true
       - name: make iso
         run: make iso DEBUG=${{ inputs.debug && '1' || '0' }}
+      - name: Inspect the ISO
+        run: |
+          sudo apt-get install -y xorriso >/dev/null
+          iso="$(ls -t out/*.iso | head -1)"; ls -l "$iso"
+          xorriso -indev "$iso" -find / -maxdepth 2 2>/dev/null | head -60
+          echo "----- /boot/grub/grub.cfg -----"; xorriso -osirrox on -indev "$iso" -extract /boot/grub/grub.cfg /tmp/grub.cfg >/dev/null 2>&1 && cat /tmp/grub.cfg
       - name: make smoke (BIOS, UEFI, persistence across a clean reboot)
         run: make smoke
       - uses: actions/upload-artifact@v4

@@ -1,0 +1,66 @@
+:root{--accent:%%ACCENT_MINT%%;--scale:1}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;font-family:"DM Sans",sans-serif}
+body{font-size:calc(16px * var(--scale))}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.55;cursor:wait}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+[hidden]{display:none!important}
+.os{position:relative;isolation:isolate;width:100%;min-height:100dvh;color:#fff;background:#101a30}
+.wallpaper{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;filter:saturate(.9) brightness(.48);z-index:-2;pointer-events:none}
+.os:before{content:"";position:fixed;inset:0;background:linear-gradient(155deg,#061024aa,transparent 48%,#07162bee);z-index:-1;pointer-events:none}
+.os.alt .wallpaper{filter:saturate(.55) brightness(.34) hue-rotate(80deg)}
+.os.focus .wallpaper{filter:grayscale(.7) brightness(.34)}
+.glass{background:#10213bd9;border:1px solid #ffffff26;backdrop-filter:blur(22px)}
+.status{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(20px,4vw,56px);font:700 calc(12px * var(--scale)) "Space Mono",monospace;position:relative;z-index:4}
+.status-icons{display:flex;align-items:center;gap:13px}.status-icons svg{width:17px;height:17px}
+.workspace{width:100%;max-width:1440px;margin:auto;padding:clamp(20px,3vw,40px) clamp(18px,5vw,72px) 110px}
+.home-layout{min-height:calc(100dvh - 165px);display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,440px);gap:clamp(28px,5vw,90px);align-items:center}
+.hero-time{font-size:clamp(calc(76px * var(--scale)),calc(12vw * var(--scale)),calc(156px * var(--scale)));letter-spacing:-.09em;line-height:1}
+.app-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px 12px}
+.shortcut{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0;color:white;font-size:calc(12px * var(--scale));font-weight:600;text-align:center}
+.app-icon{width:60px;height:60px;border-radius:20px;display:grid;place-items:center;box-shadow:inset 0 1px 2px #ffffff80,0 10px 22px #0005;transition:transform .2s}
+.shortcut:hover .app-icon{transform:translateY(-4px)}.app-icon svg{width:27px;height:27px}
+.app-view{width:100%;min-height:calc(100dvh - 54px);padding:clamp(24px,4vw,48px) max(22px,calc((100% - 1100px)/2)) 125px;background:#0b1728ed}
+.app-content{width:100%;max-width:1100px;margin:0 auto}
+.app-narrow{max-width:760px}
+.overlay{position:fixed;inset:54px 0 0;z-index:20;overflow:auto;background:#0b1827f5;backdrop-filter:blur(25px);padding:clamp(22px,5vw,56px) 22px 110px}
+.overlay-inner{max-width:850px;margin:auto}
+.field{width:100%;background:#ffffff12;border:1px solid #ffffff30;color:white;border-radius:15px;padding:12px 14px}
+.field::placeholder{color:#c3d2df99}.field option{color:#10222c}
+.action{background:%%ACCENT_MINT%%;color:#10222c;border-radius:14px;font-weight:700;padding:11px 17px}
+.small-action{background:#ffffff16;color:white;border-radius:11px;padding:8px 12px}.small-action:hover,.calc-key:hover{background:#ffffff2b}
+.item{background:#ffffff10;border:1px solid #ffffff19;border-radius:16px;padding:15px}
+.bottom-dock{position:fixed;bottom:15px;left:50%;transform:translateX(-50%);z-index:100;display:flex;align-items:center;gap:20px;border-radius:24px;padding:10px 18px;box-shadow:0 12px 36px #0009}
+.bottom-dock button{color:white;display:grid;place-items:center}.bottom-dock svg{width:20px;height:20px}
+.home-indicator{width:68px;height:18px;position:relative}.home-indicator:after{content:"";width:58px;height:5px;background:#e8faff;border-radius:20px;display:block}
+.toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px);background:#d8fbf6;color:#102834;border-radius:13px;padding:11px 16px;font-size:calc(13px * var(--scale));z-index:120}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.quick-tile{display:flex;align-items:center;gap:10px;min-height:67px;text-align:left;border:1px solid #ffffff25;border-radius:18px;background:#ffffff10;padding:12px}
+.quick-tile[aria-pressed=true]{background:%%ACCENT_MINT%%29;border-color:var(--accent)}.quick-tile svg{width:19px;height:19px;color:var(--accent);flex-shrink:0}
+.setting-row{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:17px 0;border-bottom:1px solid #ffffff19}
+.setting-row:last-child{border:0}.setting-row label{font-weight:600}.setting-row p{font-size:calc(13px * var(--scale));color:#bdcce0;margin-top:3px}
+.setting-row input[type=range]{width:min(190px,40%);accent-color:var(--accent)}
+.setting-row input[type=checkbox]{width:23px;height:23px;accent-color:#64cbc7}
+.calc-key{height:58px;border-radius:17px;background:#ffffff14;color:white;font-size:calc(21px * var(--scale));font-weight:600}
+.calc-key.operator{background:#174851;color:#affff4}.calc-key.equals{background:%%ACCENT_MINT%%;color:#081d26}
+.photo-thumb{height:190px;object-fit:cover}
+.photo-modal{position:fixed;inset:0;z-index:110;background:#05101bf2;display:grid;place-items:center;padding:24px}
+.photo-modal img{max-width:min(900px,100%);max-height:75%;object-fit:contain;border-radius:16px}
+.photo-modal .close-photo{position:absolute;top:22px;right:22px}
+.browser-tab{display:flex;align-items:center;gap:8px;min-width:110px;max-width:220px;padding:9px 12px;border:1px solid #ffffff20;border-radius:12px 12px 0 0;background:#ffffff0c;color:#fff}
+.browser-tab[aria-selected=true]{background:#ffffff25;border-bottom-color:transparent}
+.browser-tab-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:left}
+.browser-tab-close{border-radius:5px;padding:0 4px}
+.browser-tab-close:hover{background:#ffffff30}
+.browser-tabs{display:flex;align-items:end;gap:5px;overflow-x:auto}
+.browser-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.browser-toolbar .field{flex:1;min-width:180px}
+.no-motion *,.no-motion *:before,.no-motion *:after{animation:none!important;transition:none!important}
+@media(max-width:800px){.home-layout{grid-template-columns:1fr;align-content:start;gap:34px}.home-right{max-width:550px;width:100%;margin:auto}.quick-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.status{height:42px;padding:0 18px}.workspace{padding:22px 20px 105px}.hero-time{font-size:clamp(calc(68px * var(--scale)),calc(20vw * var(--scale)),calc(94px * var(--scale)))}.app-grid{gap:21px 6px}.app-icon{width:54px;height:54px;border-radius:18px}.shortcut{font-size:calc(11px * var(--scale))}.app-view{min-height:calc(100dvh - 42px);padding:24px 18px 110px}.overlay{inset:42px 0 0;padding:25px 20px 110px}.bottom-dock{bottom:10px}.quick-grid{gap:8px}.quick-tile{font-size:calc(13px * var(--scale))}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}/* --- NovaOS build additions (not in the original) --- */
+/* Shown only when the wallpaper image cannot be loaded, so the build never ends up with a flat background. */
+.os.no-wallpaper{background:radial-gradient(120% 90% at 20% 10%,#3b2d8f 0%,transparent 55%),radial-gradient(90% 80% at 85% 30%,#1d5fa8 0%,transparent 60%),linear-gradient(160deg,#0d1636,#101a30 60%,#1a0f3a)}
+.os.no-wallpaper .wallpaper{display:none}

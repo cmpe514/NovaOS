@@ -1,0 +1,15 @@
+# Copies novad's "NOVAOS_READY" log line (written when the home screen has rendered) to the first serial
+# port, so headless test harnesses (tools/smoke-qemu.sh) can see that the boot reached the home screen.
+[Unit]
+Description=Report %%NAME%% readiness on the serial console
+ConditionPathExists=/dev/ttyS0
+After=novaos-session.service
+BindsTo=novaos-session.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/novaos/ready-marker
+StandardOutput=journal
+
+[Install]
+WantedBy=novaos-session.service

@@ -1,0 +1,64 @@
+#!/bin/bash
+# %%NAME%% recovery menu (text mode, tty1). Offers a fixed set of safe actions; no shell in release builds.
+set -uo pipefail
+target=/var/lib/novaos
+label=NOVA-DATA
+debug=%%DEBUG%%
+clear
+pause() { read -r -p "Press Enter to continue… " _; }
+datadev() { [[ -e /dev/disk/by-label/$label ]] && readlink -f "/dev/disk/by-label/$label"; }
+
+repair() {
+  local dev; dev="$(datadev)" || { echo "No $label disk is attached."; return; }
+  if mountpoint -q "$target"; then umount "$target" || { echo "The data disk is busy and cannot be checked."; return; }; fi
+  echo "Checking $dev (this can take a few minutes)…"
+  e2fsck -f -y "$dev"; rc=$?
+  case $rc in 0) echo "The disk is healthy.";; 1|2) echo "Problems were found and repaired.";; *) echo "e2fsck could not repair everything (status $rc). Back up your data and set up a new disk.";; esac
+}
+
+backup() {
+  local dev; dev="$(datadev)" || { echo "No $label disk is attached."; return; }
+  mountpoint -q "$target" || mount -o ro "$dev" "$target" || { echo "Could not open the data disk."; return; }
+  mapfile -t parts < <(lsblk -rno NAME,FSTYPE,TRAN,LABEL | awk '$2 ~ /^(vfat|exfat|ext4|ntfs)$/ && $4 != "NOVA-DATA" {print $1}')
+  (( ${#parts[@]} )) || { echo "Plug in a USB drive (FAT, exFAT, NTFS or ext4) and try again."; return; }
+  echo "Copy your data to which drive?"
+  select p in "${parts[@]}" "Cancel"; do [[ "$p" == Cancel || -z "$p" ]] && return; break; done
+  local mnt; mnt="$(mktemp -d)"
+  mount "/dev/$p" "$mnt" || { echo "Could not mount /dev/$p."; return; }
+  local file; file="$mnt/novaos-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
+  echo "Writing $file …"
+  if tar -czf "$file" -C "$target" data home/Documents home/Pictures; then echo "Backup written."; else echo "The backup failed."; fi
+  umount "$mnt"; rmdir "$mnt"
+}
+
+reset_settings() {
+  local f="$target/data/settings.json"
+  if [[ -f "$f" ]]; then mv "$f" "$f.reset-$(date +%s)"; echo "Shell settings reset (the old file was kept next to it)."; else echo "There are no saved settings."; fi
+}
+
+info() {
+  echo; grep PRETTY_NAME /etc/os-release; uname -r; echo
+  lsblk -o NAME,SIZE,TYPE,FSTYPE,LABEL,MOUNTPOINTS; echo
+  ip -brief address 2>/dev/null || true; echo
+  echo "Errors from this boot:"; journalctl -b -p err --no-pager -n 30 2>/dev/null || true
+}
+
+while true; do
+  echo
+  echo "  %%NAME%% recovery"
+  echo "  ───────────────────"
+  options=("Check and repair the data disk" "Copy my data to a USB drive" "Reset shell settings" "Show system information" "Start %%NAME%% normally" "Restart" "Shut down")
+  (( debug )) && options+=("Open a root shell (debug build)")
+  PS3=$'\nChoose a number: '
+  select choice in "${options[@]}"; do
+    case "$REPLY" in
+      1) repair ;; 2) backup ;; 3) reset_settings ;; 4) info ;;
+      5) systemctl isolate graphical.target; exit 0 ;;
+      6) systemctl reboot; exit 0 ;;
+      7) systemctl poweroff; exit 0 ;;
+      8) (( debug )) && /bin/bash -l ;;
+      *) echo "Please type one of the numbers." ;;
+    esac
+    pause; clear; break
+  done
+done

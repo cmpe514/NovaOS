@@ -1,0 +1,56 @@
+# %%NAME%% appliance: everything the session needs and nothing else. Firmware for Wi-Fi and GPUs comes
+# from non-free-firmware via `lb config --firmware-chroot true` (see image/auto/config).
+
+# System
+systemd-sysv
+systemd-timesyncd
+libpam-systemd
+dbus
+polkitd
+udev
+fdisk
+e2fsprogs
+dosfstools
+exfatprogs
+ntfs-3g
+rfkill
+pciutils
+usbutils
+ca-certificates
+tzdata
+
+# Boot splash
+plymouth
+plymouth-label
+
+# Display: Wayland kiosk compositor + browser engine (security updates come with every rebuild)
+sway
+chromium
+libgl1-mesa-dri
+libegl-mesa0
+mesa-vulkan-drivers
+fonts-dejavu-core
+fonts-noto-core
+fonts-noto-color-emoji
+
+# Sound
+pipewire
+pipewire-pulse
+pipewire-alsa
+wireplumber
+libspa-0.2-bluetooth
+alsa-ucm-conf
+
+# Network, Bluetooth, USB drives
+network-manager
+wpasupplicant
+bluez
+udisks2
+
+# On-screen keyboard (started only when a touchscreen is present)
+squeekboard
+
+#if ARCHITECTURES amd64
+amd64-microcode
+intel-microcode
+#endif

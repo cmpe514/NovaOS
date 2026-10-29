@@ -1,0 +1,7 @@
+# Booted from the "%%NAME%% recovery" menu entry (systemd.unit=novaos-recovery.target).
+[Unit]
+Description=%%NAME%% recovery
+Requires=basic.target novaos-recovery.service
+After=basic.target
+Conflicts=novaos-session.service rescue.service rescue.target
+AllowIsolate=yes

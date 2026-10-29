@@ -1,0 +1,13 @@
+# Formats ONE blank disk as NOVA-DATA and moves the current session's data onto it. Started (through
+# polkit, by the session user only) when the user confirms "Set up storage" in Settings.
+# The helper re-checks that the disk is completely blank and refuses otherwise.
+[Unit]
+Description=Set up %I as %%NAME%% data storage
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/novaos/storage-setup %I
+TimeoutStartSec=300
+PrivateTmp=yes

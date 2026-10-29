@@ -1,0 +1,19 @@
+[Unit]
+Description=%%NAME%% recovery menu
+After=basic.target plymouth-quit-wait.service
+Conflicts=novaos-session.service getty@tty1.service
+DefaultDependencies=no
+Before=shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+Type=idle
+ExecStartPre=-/usr/bin/plymouth quit
+ExecStart=/usr/lib/novaos/recovery
+StandardInput=tty-force
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+Restart=always

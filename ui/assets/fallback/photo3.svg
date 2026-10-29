@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice">
+  <!-- NovaOS fallback photo 3: blue and purple smoke on a dark background (original artwork, CC0). -->
+  <defs>
+    <filter id="s" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".004 .014" numOctaves="6" seed="11"/><feColorMatrix values=".2 0 .9 0 -.25  .1 .2 .3 0 -.1  .6 .2 1.2 0 -.2  0 0 0 1.4 -.35"/><feGaussianBlur stdDeviation="2"/></filter>
+  </defs>
+  <rect width="800" height="600" fill="#05060f"/>
+  <rect width="800" height="600" filter="url(#s)"/>
+</svg>

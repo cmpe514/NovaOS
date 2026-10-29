@@ -1,0 +1,59 @@
+NovaOS — third-party components and licence obligations
+=======================================================
+
+NovaOS's own code (ui/src, daemon/, image/, tools/, tests/) has no licence file yet: the repository
+owner decides how to license it. Everything below is third-party software that NovaOS builds on or ships.
+
+1. Shipped inside the shell UI (ui/dist, also /usr/share/novaos/ui in the image)
+-------------------------------------------------------------------------------
+Component                     Version   Licence        Licence text in the build
+DM Sans (@fontsource/dm-sans)  5.3.0     SIL OFL 1.1    licenses/OFL-dm-sans.txt
+Space Mono (@fontsource/...)   5.3.0     SIL OFL 1.1    licenses/OFL-space-mono.txt
+Lucide icons                   0.577.0   ISC            licenses/lucide-ISC.txt
+Tailwind CSS (compiled CSS)    3.4.17    MIT            licenses/tailwindcss-MIT.txt
+Wallpaper and 3 photos         —         Pexels License (when fetched) or CC0 1.0 (bundled fallback art);
+                                         see licenses/IMAGES.txt and CREDITS
+
+Obligations: OFL — the fonts are shipped unmodified with their licence and are not sold on their own;
+ISC/MIT — keep the copyright and permission notices (done: the files above are part of every build).
+
+2. novad
+--------
+Built only from the Go standard library (BSD-3-Clause, https://go.dev/LICENSE). The binary embeds
+it; the licence text ships in the image as /usr/share/doc/novaos/THIRD_PARTY_LICENSES (this file) and
+the Go licence applies as stated at that URL.
+
+3. The operating system image (Debian GNU/Linux 13 "trixie" packages)
+---------------------------------------------------------------------
+The ISO contains unmodified Debian binary packages, including:
+  Linux kernel (GPL-2.0), GNU C library (LGPL-2.1+), systemd (LGPL-2.1+ / GPL-2.0+), GRUB (GPL-3.0+),
+  Plymouth (GPL-2.0+), live-boot (GPL-3.0+), sway and wlroots (MIT), Chromium (BSD-3-Clause and many
+  others), PipeWire/WirePlumber (MIT), NetworkManager (GPL-2.0+), BlueZ (GPL-2.0+), udisks2 (GPL-2.0+),
+  polkit (LGPL-2.0+), squeekboard (GPL-3.0+), Mesa (MIT), Noto and DejaVu fonts (OFL / Bitstream Vera),
+  firmware from non-free-firmware (various redistributable, non-free licences).
+Each package's exact licence is in the image at /usr/share/doc/<package>/copyright (kept on purpose
+when the image is trimmed). The exact package versions of a build are listed in
+out/<iso>.packages, written next to the ISO.
+
+GPL / LGPL obligations when you DISTRIBUTE the ISO (giving it to others, publishing it):
+you must make the corresponding source code available. Options:
+  a) point recipients to the exact versions on https://snapshot.debian.org (fine for non-commercial
+     distribution of unmodified Debian packages, as Debian itself documents), or
+  b) build a matching source archive: run live-build with --source true --source-images tar (add it to
+     EXTRA_LB_OPTIONS in tools/build-iso.sh) and distribute it alongside the ISO, or
+  c) include a written offer for the source, valid for three years.
+Using the ISO yourself creates no obligation.
+
+Non-free firmware may only be redistributed under each vendor's terms (all packages in Debian's
+non-free-firmware section permit redistribution as part of Debian-derived images).
+
+4. Build and test tools (not shipped in the ISO)
+------------------------------------------------
+live-build (GPL-3.0+), debootstrap (MIT), Node.js (MIT), npm packages listed in ui/package-lock.json
+and tests/package-lock.json (Playwright Apache-2.0, pixelmatch ISC, pngjs MIT, Tailwind's toolchain
+MIT/ISC/BSD), QEMU (GPL-2.0), OVMF/EDK II (BSD-2-Clause-Patent).
+
+5. Data services
+----------------
+Weather data by Open-Meteo.com, licensed CC BY 4.0 (attribution is shown in the Weather app whenever
+live data is displayed). Free for non-commercial use; commercial use needs an Open-Meteo plan.

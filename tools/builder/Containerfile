@@ -1,0 +1,16 @@
+# NovaOS builder: everything `make iso`, `make test` and `make smoke` need, on Debian 13 (trixie).
+# Built automatically by tools/in-builder.sh; rebuilt whenever this file changes.
+# amd64 host. Cross-building arm64 additionally needs qemu-user-static/binfmt on the host (docs/BUILDING.md).
+FROM docker.io/library/debian:trixie
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      live-build debootstrap xorriso squashfs-tools mtools dosfstools \
+      grub-pc-bin grub-efi-amd64-bin grub-common syslinux-common isolinux \
+      golang-go nodejs npm \
+      git make ca-certificates curl rsync python3 file shellcheck \
+      qemu-system-x86 qemu-system-arm qemu-utils ovmf qemu-efi-aarch64 \
+      chromium fonts-dejavu-core \
+ && rm -rf /var/lib/apt/lists/* \
+ && touch /.novaos-builder
+ENV GOFLAGS=-buildvcs=false NOVA_CHROMIUM=/usr/bin/chromium
+WORKDIR /src

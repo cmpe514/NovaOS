@@ -1,0 +1,28 @@
+NovaOS credits
+==============
+
+Design: the original "NovaOS — interactive workspace" single-file UI (ui/original/ui.html).
+
+Typefaces
+  DM Sans — Colophon Foundry, Jonny Pinhorn, Indian Type Foundry; SIL Open Font License 1.1
+  Space Mono — Colophon Foundry; SIL Open Font License 1.1
+  (packaged by Fontsource, https://fontsource.org)
+
+Icons
+  Lucide (https://lucide.dev), ISC licence
+
+Images (the original design used these Pexels photos; `make assets` downloads them)
+  Wallpaper  https://www.pexels.com/photo/6985132/
+  Photo 1    https://www.pexels.com/photo/30052971/
+  Photo 2    https://www.pexels.com/photo/30052973/
+  Photo 3    https://www.pexels.com/photo/40131643/
+  Used under the Pexels License (https://www.pexels.com/license/). Photographer names are shown on
+  each photo's page; Pexels does not require attribution but it is appreciated.
+  When the photos are not downloaded, the build uses original abstract artwork made for NovaOS
+  (ui/assets/fallback/*.svg), released under CC0 1.0.
+
+Weather data
+  Open-Meteo.com, CC BY 4.0
+
+Built on Debian GNU/Linux, sway, Chromium, PipeWire, NetworkManager, BlueZ and many other free
+software projects; see THIRD_PARTY_LICENSES.

@@ -1,0 +1,26 @@
+#!/bin/bash
+# Started by novaos-session.service as the unprivileged user on tty1. Picks a renderer and runs sway.
+set -euo pipefail
+export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=novaos XDG_CURRENT_DESKTOP=sway:NovaOS
+export MOZ_ENABLE_WAYLAND=1 QT_QPA_PLATFORM=wayland GDK_BACKEND=wayland
+state="${XDG_RUNTIME_DIR:?}/novaos-session"
+mkdir -p "$state"
+cmdline="$(cat /proc/cmdline)"
+
+# Software rendering when asked (safe mode), when there is no GPU render node, or when the previous
+# attempt with the GPU died within 15 seconds (a VM display without working 3D, for example).
+renderer=""
+case " $cmdline " in *" novaos.renderer=pixman "*|*" novaos.safe=1 "*) renderer=pixman ;; esac
+compgen -G '/dev/dri/renderD*' >/dev/null || renderer=pixman
+if [[ -z "$renderer" && -f "$state/last-start" ]]; then
+  if (( $(date +%s) - $(cat "$state/last-start") < 15 )) && [[ "$(cat "$state/last-renderer" 2>/dev/null)" != pixman ]]; then
+    echo "novaos-session: previous start with GPU rendering failed quickly; switching to software rendering" >&2
+    renderer=pixman
+  fi
+fi
+[[ -n "$renderer" ]] && export WLR_RENDERER="$renderer"
+if systemd-detect-virt --quiet --vm 2>/dev/null; then export WLR_NO_HARDWARE_CURSORS=1; fi
+date +%s > "$state/last-start"
+echo "${renderer:-auto}" > "$state/last-renderer"
+echo "novaos-session: starting sway (renderer: ${renderer:-auto})" >&2
+exec sway --config /etc/novaos/sway/config

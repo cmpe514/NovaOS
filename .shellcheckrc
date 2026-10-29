@@ -1,0 +1,4 @@
+# Every script sources tools/lib.sh, which sets `set -euo pipefail` (so a failed cd aborts) and whose
+# log functions read NOVA_STEP. shellcheck cannot see either through the source line.
+# SC2054: commas inside QEMU and Chromium arguments (-audiodev pa,id=snd) are intended.
+disable=SC2034,SC2164,SC1091,SC2054

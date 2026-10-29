@@ -1,0 +1,50 @@
+#!/bin/sh
+# %%NAME%% image customisation (runs inside the chroot during `lb build`).
+set -eu
+U=%%USER%%
+
+echo "I: novaos: session user"
+if ! id "$U" >/dev/null 2>&1; then
+  useradd --uid 1000 --user-group --home-dir /var/lib/novaos/home --no-create-home \
+          --shell /usr/sbin/nologin --comment "%%NAME%% session" "$U"
+fi
+passwd --lock "$U"            # no password at all: the account only runs the session
+for g in audio video render input bluetooth netdev plugdev; do
+  if getent group "$g" >/dev/null; then usermod -aG "$g" "$U"; fi
+done
+
+echo "I: novaos: no live-config (it would create a 'user' account with sudo and autologin)"
+apt-get purge -y live-config live-config-systemd live-config-doc 2>/dev/null || true
+
+echo "I: novaos: services"
+systemctl enable novaos-data.service novaos-session.service novaos-ready-marker.service \
+                 NetworkManager.service bluetooth.service systemd-timesyncd.service
+systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service || true
+systemctl set-default graphical.target
+# No consoles or login prompts anywhere (debug builds re-enable one on tty2).
+systemctl mask getty@.service autovt@.service serial-getty@.service console-getty.service
+systemctl mask apt-daily.timer apt-daily-upgrade.timer man-db.timer e2scrub_all.timer 2>/dev/null || true
+for unit in ssh.service ssh.socket; do systemctl disable "$unit" 2>/dev/null || true; done
+
+echo "I: novaos: identity"
+echo "%%HOSTNAME%%" > /etc/hostname
+printf '127.0.0.1\tlocalhost\n127.0.1.1\t%%HOSTNAME%%\n::1\t\tlocalhost ip6-localhost ip6-loopback\n' > /etc/hosts
+# Keep Debian's identity (ID=debian) and add ours as the variant, as derivatives are asked to.
+osr="$(readlink -f /etc/os-release)"
+grep -v '^VARIANT' "$osr" > /etc/os-release.novaos
+printf 'VARIANT="%%NAME%% %%VERSION%%"\nVARIANT_ID=%%ID%%\n' >> /etc/os-release.novaos
+rm -f /etc/os-release && mv /etc/os-release.novaos /etc/os-release
+
+echo "I: novaos: boot splash"
+plymouth-set-default-theme novaos
+update-initramfs -u -k all
+
+echo "I: novaos: permissions"
+chmod 0644 /etc/polkit-1/rules.d/50-novaos.rules /etc/chromium/policies/managed/novaos.json
+chmod 0755 /usr/lib/novaos/* /usr/bin/novad
+chown root:root -R /usr/lib/novaos /etc/novaos
+
+echo "I: novaos: trimming (licence files under /usr/share/doc/*/copyright are kept)"
+find /usr/share/doc -mindepth 2 ! -name copyright ! -type d -delete 2>/dev/null || true
+rm -rf /usr/share/man/* /usr/share/info/* /var/cache/apt/*.bin
+apt-get clean

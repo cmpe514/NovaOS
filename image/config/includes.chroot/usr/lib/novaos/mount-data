@@ -1,0 +1,53 @@
+#!/bin/bash
+# Mounts the NOVA-DATA partition (ext4, found by label) on /var/lib/novaos and prepares the user's
+# directories. Never formats anything: blank disks are only set up from Settings, after confirmation.
+set -euo pipefail
+target=/var/lib/novaos
+user=%%USER%%
+label=NOVA-DATA
+log() { echo "novaos-data: $*"; }
+
+udevadm settle --timeout=10 || true
+dev=""
+for _ in $(seq 1 15); do   # USB disks can take a moment to appear
+  if [[ -e /dev/disk/by-label/$label ]]; then dev="$(readlink -f "/dev/disk/by-label/$label")"; break; fi
+  sleep 0.2
+done
+
+mkdir -p "$target"
+if [[ -n "$dev" ]] && ! mountpoint -q "$target"; then
+  fstype="$(blkid -o value -s TYPE "$dev" || true)"
+  if [[ "$fstype" != ext4 ]]; then
+    log "$dev is labelled $label but is '$fstype', not ext4; not mounting it"
+  else
+    log "checking $dev"
+    rc=0; e2fsck -p "$dev" || rc=$?
+    if (( rc >= 4 )); then
+      log "e2fsck found problems it could not fix automatically (status $rc); not mounting $dev."
+      log "Boot the 'recovery' entry and choose 'Check and repair the data disk'. Data stays in RAM for now."
+    elif mount -t ext4 -o noatime,nosuid,nodev "$dev" "$target"; then
+      log "mounted $dev on $target"
+    else
+      log "could not mount $dev; data stays in RAM for this session"
+    fi
+  fi
+else
+  [[ -n "$dev" ]] || log "no $label partition found; data stays in RAM for this session"
+fi
+
+install -d -m 0755 -o root -g root "$target"
+# System state that should survive a reboot when there is a data disk: known Wi-Fi networks, paired
+# Bluetooth devices and the time zone. On the live system these paths are otherwise in RAM.
+if mountpoint -q "$target"; then
+  install -d -m 0700 -o root -g root "$target/system" "$target/system/NetworkManager" "$target/system/bluetooth"
+  mountpoint -q /etc/NetworkManager/system-connections || mount --bind "$target/system/NetworkManager" /etc/NetworkManager/system-connections
+  mkdir -p /var/lib/bluetooth
+  mountpoint -q /var/lib/bluetooth || mount --bind "$target/system/bluetooth" /var/lib/bluetooth
+fi
+# The time zone chosen in Settings is stored by novad in settings.json; apply it before anything starts.
+zone="$(sed -n 's/.*"system_timezone": *"\([A-Za-z0-9_+\/-]*\)".*/\1/p' "$target/data/settings.json" 2>/dev/null | head -1)"
+if [[ -n "$zone" && "$zone" != *..* && -f "/usr/share/zoneinfo/$zone" ]]; then
+  ln -sf "/usr/share/zoneinfo/$zone" /etc/localtime && echo "$zone" > /etc/timezone && log "time zone $zone"
+fi
+install -d -m 0700 -o "$user" -g "$user" "$target/data" "$target/home"
+for d in Documents Pictures Downloads; do install -d -m 0700 -o "$user" -g "$user" "$target/home/$d"; done

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Keeps novad running inside the graphical session (so polkit sees it as the active local session).
+set -uo pipefail
+while true; do
+  /usr/bin/novad serve --listen 127.0.0.1:%%PORT%% --ui /usr/share/novaos/ui \
+    --data /var/lib/novaos/data --data-mount /var/lib/novaos --home "$HOME" ${NOVAD_ARGS:-}
+  echo "novad exited with status $?; restarting in 1 s" >&2
+  sleep 1
+done

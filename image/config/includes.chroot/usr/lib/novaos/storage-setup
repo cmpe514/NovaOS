@@ -1,0 +1,38 @@
+#!/bin/bash
+# storage-setup DISK — partition and format a completely blank disk as NOVA-DATA, copy the current data
+# onto it and mount it on /var/lib/novaos. Refuses anything that is not provably blank.
+set -euo pipefail
+name="${1:?usage: storage-setup DISK}"
+target=/var/lib/novaos
+die() { echo "novaos-storage-setup: refusing: $*" >&2; exit 1; }
+[[ "$name" =~ ^(sd[a-z]{1,2}|vd[a-z]{1,2}|xvd[a-z]{1,2}|nvme[0-9]{1,2}n[0-9]{1,2}|mmcblk[0-9]{1,2})$ ]] || die "invalid disk name '$name'"
+dev="/dev/$name"
+[[ -b "$dev" ]] || die "$dev does not exist"
+[[ "$(lsblk -dn -o TYPE "$dev")" == disk ]] || die "$dev is not a whole disk"
+[[ "$(lsblk -dn -o RO "$dev" | tr -d ' ')" == 0 ]] || die "$dev is read-only"
+(( $(lsblk -n -o NAME "$dev" | wc -l) == 1 )) || die "$dev has partitions"
+[[ -z "$(lsblk -dn -o FSTYPE,PTTYPE "$dev" | tr -d ' ')" ]] || die "$dev carries a filesystem or partition table"
+[[ -z "$(wipefs --no-act --noheadings "$dev" 2>/dev/null)" ]] || die "$dev has signatures (wipefs)"
+if blkid -p "$dev" >/dev/null 2>&1; then die "$dev is not blank (blkid)"; fi
+[[ -z "$(lsblk -n -o MOUNTPOINTS "$dev" | tr -d ' \n')" ]] || die "$dev is mounted"
+medium="$(findmnt -n -o SOURCE /run/live/medium 2>/dev/null || true)"
+[[ -z "$medium" || "$(lsblk -n -o PKNAME "$medium" 2>/dev/null)" != "$name" ]] || die "$dev holds the boot medium"
+mountpoint -q "$target" && die "a data disk is already mounted on $target"
+(( $(blockdev --getsize64 "$dev") >= 1073741824 )) || die "$dev is smaller than 1 GiB"
+
+echo "novaos-storage-setup: partitioning $dev"
+printf 'label: gpt\n,,L,\n' | sfdisk --quiet --wipe always "$dev"
+udevadm settle --timeout=10
+case "$name" in nvme*|mmcblk*) part="${dev}p1" ;; *) part="${dev}1" ;; esac
+for _ in $(seq 1 25); do [[ -b "$part" ]] && break; sleep 0.2; done
+[[ -b "$part" ]] || { echo "partition $part did not appear" >&2; exit 1; }
+echo "novaos-storage-setup: formatting $part as NOVA-DATA"
+mkfs.ext4 -q -F -L NOVA-DATA -m 1 -E lazy_itable_init=1 "$part"
+staging="$(mktemp -d /run/novaos-setup.XXXXXX)"
+mount -t ext4 -o noatime,nosuid,nodev "$part" "$staging"
+echo "novaos-storage-setup: copying the current data"
+cp -a "$target/." "$staging/"
+sync -f "$staging"
+umount "$staging"; rmdir "$staging"
+mount -t ext4 -o noatime,nosuid,nodev "$part" "$target"
+echo "novaos-storage-setup: $part is mounted on $target; changes are saved from now on"

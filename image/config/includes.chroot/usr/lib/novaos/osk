@@ -1,0 +1,11 @@
+#!/bin/bash
+# Starts the on-screen keyboard (squeekboard) only when a touchscreen is present.
+set -uo pipefail
+command -v squeekboard >/dev/null || exit 0
+touch=0
+for dev in /dev/input/event*; do
+  if udevadm info --query=property --name="$dev" 2>/dev/null | grep -q '^ID_INPUT_TOUCHSCREEN=1'; then touch=1; break; fi
+done
+(( touch )) || exit 0
+gsettings set org.gnome.desktop.a11y.applications screen-keyboard-enabled true 2>/dev/null || true
+exec squeekboard

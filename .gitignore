@@ -1,0 +1,13 @@
+node_modules/
+ui/dist/
+ui/assets/fetched/
+tests/results/
+tests/report/
+tests/reference/.build/
+daemon/bin/
+build/
+out/
+*.iso
+*.qcow2
+.dev-data/
+tests/.novad/

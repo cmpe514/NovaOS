@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en" data-version="%%VERSION%%"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>%%NAME%% — interactive workspace</title>
+  <link href="css/fonts.css" rel="stylesheet">
+  <link href="css/shell.css" rel="stylesheet">
+  <link href="css/tailwind.css" rel="stylesheet">
+ </head>
+ <body class="w-full" style="background: rgb(8, 13, 24);">
+  <main id="os" class="os w-full"><img class="wallpaper" loading="lazy" %%ASSET:wallpaper%%>
+   <header class="status"><span id="status-time">09:41</span>
+    <div class="status-icons" aria-label="System indicators"><i id="wifi-icon" data-lucide="wifi" role="img" aria-label="Wi-Fi status"></i> <i id="signal-icon" data-lucide="signal" role="img" aria-label="Wi-Fi signal strength" hidden=""></i> <i id="battery-icon" data-lucide="battery-full" role="img" aria-label="Battery" hidden=""></i> <button id="status-settings" class="small-action" type="button" aria-label="Open quick settings"><i data-lucide="sliders-horizontal"></i></button>
+    </div>
+   </header>
+   <section id="home" class="workspace" aria-label="Home screen">
+    <div class="home-layout">
+     <div>
+      <p class="uppercase tracking-[.35em] mb-5" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(12px * var(--scale));">A NEW PERSPECTIVE</p>
+      <p id="home-date" class="font-medium tracking-wide"></p>
+      <p id="home-time" class="hero-time mt-2"></p>
+      <h1 class="font-bold mt-5" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(32px * var(--scale));">%%NAME%%</h1>
+      <p class="mt-2" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">%%TAGLINE%%</p>
+      <div class="glass rounded-[26px] p-5 mt-9 max-w-md" style="background: rgba(16, 33, 59, 0.74);">
+       <p class="uppercase tracking-[.2em] mb-2" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(10px * var(--scale));">YOUR SPACE</p>
+       <p class="font-semibold" style="color: rgb(255, 255, 255); font-weight: 600; font-style: normal; font-size: calc(16px * var(--scale));">A little more clarity.</p>
+       <p class="mt-1" style="color: rgb(214, 227, 241); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Your favorite tools, always close at hand.</p>
+      </div>
+     </div>
+     <div class="home-right">
+      <div class="flex justify-between items-center mb-6">
+       <h2 class="font-bold" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Your apps</h2><button data-open="shade" class="small-action flex items-center gap-2" type="button"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(12px * var(--scale));">Quick settings</span></button>
+      </div>
+      <nav class="app-grid" aria-label="Home apps"><button class="shortcut" data-open="notes" type="button"><span class="app-icon" style="background:#f9d989;color:#3b3429"><i data-lucide="notebook-pen"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Notes</span></button> <button class="shortcut" data-open="tasks" type="button"><span class="app-icon" style="background:#a4e5d2;color:#23463e"><i data-lucide="list-checks"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Tasks</span></button> <button class="shortcut" data-open="calculator" type="button"><span class="app-icon" style="background:#b1c8f4;color:#293c65"><i data-lucide="calculator"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Calculator</span></button> <button class="shortcut" data-open="clock" type="button"><span class="app-icon" style="background:#f6a9a4;color:#683a40"><i data-lucide="clock-3"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Clock</span></button> <button class="shortcut" data-open="weather" type="button"><span class="app-icon" style="background:#b5dff7;color:#315576"><i data-lucide="cloud-sun"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Weather</span></button> <button class="shortcut" data-open="music" type="button"><span class="app-icon" style="background:#e3b9e9;color:#5b3868"><i data-lucide="music-2"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Music</span></button> <button class="shortcut" data-open="photos" type="button"><span class="app-icon" style="background:#f8c9a7;color:#704534"><i data-lucide="images"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Photos</span></button> <button class="shortcut" data-open="browser" type="button"><span class="app-icon" style="background:#9ccbe3;color:#274b69"><i data-lucide="globe-2"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Browser</span></button> <button class="shortcut" data-open="files" type="button"><span class="app-icon" style="background:#edd5a6;color:#6c5131"><i data-lucide="folder-closed"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Files</span></button> <button class="shortcut" data-open="calendar" type="button"><span class="app-icon" style="background:#eebac2;color:#693f4c"><i data-lucide="calendar-days"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Calendar</span></button> <button class="shortcut" data-open="settings" type="button"><span class="app-icon" style="background:#637c9c;color:#fff"><i data-lucide="settings-2"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">Settings</span></button> <button class="shortcut" data-open="drawer" type="button"><span class="app-icon" style="background:#415c78;color:#fff"><i data-lucide="layout-grid"></i></span><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(11px * var(--scale));">All apps</span></button>
+      </nav>
+     </div>
+    </div>
+   </section>
+   <section id="drawer" class="overlay" hidden="" aria-label="App drawer">
+    <div class="overlay-inner">
+     <div class="flex justify-between items-center mb-4">
+      <h2 class="font-bold" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">All apps</h2><button data-close-overlay="" class="small-action" type="button" aria-label="Close app drawer">✕</button>
+     </div>
+     <p class="mb-8" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Everything you need, in one place.</p>
+     <nav id="drawer-grid" class="app-grid" aria-label="All apps"></nav>
+    </div>
+   </section>
+   <section id="shade" class="overlay" hidden="" aria-label="Quick settings">
+    <div class="overlay-inner">
+     <div class="flex justify-between items-center mb-7">
+      <div>
+       <h2 class="font-bold" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Quick settings</h2>
+       <p class="mt-1" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Make this space yours.</p>
+      </div><button data-close-overlay="" class="small-action" type="button" aria-label="Close quick settings">✕</button>
+     </div>
+     <div class="quick-grid mb-8"><button class="quick-tile" data-switch="wifi" type="button" aria-pressed="true"><i data-lucide="wifi"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Wi-Fi</span></button> <button class="quick-tile" data-switch="bluetooth" type="button" aria-pressed="false"><i data-lucide="bluetooth"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Bluetooth</span></button> <button class="quick-tile" data-switch="focus" type="button" aria-pressed="false"><i data-lucide="moon"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Focus</span></button> <button class="quick-tile" data-switch="quiet" type="button" aria-pressed="false"><i data-lucide="volume-x"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Quiet</span></button> <button class="quick-tile" data-switch="alt" type="button" aria-pressed="false"><i data-lucide="palette"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Wallpaper mood</span></button> <button class="quick-tile" data-switch="motion" type="button" aria-pressed="false"><i data-lucide="sparkles"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Reduce motion</span></button> <button class="quick-tile" data-switch="clock24" type="button" aria-pressed="false"><i data-lucide="clock-3"></i><span style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">24-hour time</span></button>
+     </div>
+     <div class="item mb-5">
+      <label class="block mb-3" for="brightness" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Screen brightness</label><input id="brightness" class="w-full" style="accent-color:%%ACCENT_MINT%%" type="range" min="45" max="110" value="100">
+     </div>
+     <div id="volume-item" class="item mb-5" hidden="">
+      <label class="block mb-3" for="volume" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Volume</label><input id="volume" class="w-full" style="accent-color:%%ACCENT_MINT%%" type="range" min="0" max="100" value="60">
+     </div>
+     <p id="quick-disclaimer" class="mb-5" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Wi-Fi and Bluetooth tiles switch this device’s radios.</p><button data-open="settings" class="small-action" type="button" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">All settings →</button> <button id="power-button" class="small-action" type="button" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Power…</button>
+    </div>
+   </section>
+   <section id="notes" class="app-view" hidden="" aria-label="Notes app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-7" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Notes</h2>
+     <form id="note-form" class="space-y-3 mb-7"><label class="block" for="note-title" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Title</label><input id="note-title" class="field" maxlength="80" required=""> <label class="block" for="note-content" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Your note</label><textarea id="note-content" class="field resize-none" rows="3" maxlength="1000"></textarea> <button class="action w-full" type="submit" style="background: %%ACCENT_MINT%%; color: rgb(16, 34, 44); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Save note</button>
+     </form>
+     <p id="note-loading" class="text-white/60">Loading saved notes…</p>
+     <p id="note-empty" hidden="" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">No notes yet. Capture your first thought above.</p>
+     <div id="note-list" class="space-y-3"></div>
+    </div>
+   </section>
+   <section id="tasks" class="app-view" hidden="" aria-label="Tasks app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-7" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Tasks</h2>
+     <form id="task-form" class="space-y-3 mb-7">
+      <label class="block" for="task-title" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">New task</label><input id="task-title" class="field" maxlength="120" required=""><button class="action w-full" type="submit" style="background: %%ACCENT_MINT%%; color: rgb(16, 34, 44); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Add task</button>
+     </form>
+     <p id="task-loading" class="text-white/60">Loading saved tasks…</p>
+     <p id="task-empty" hidden="" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Your list is clear. Add a task above.</p>
+     <div id="task-list" class="space-y-3"></div>
+    </div>
+   </section>
+   <section id="calculator" class="app-view" hidden="" aria-label="Calculator app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-10" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Calculator</h2><output id="calc-display" class="block text-right text-5xl font-light break-all mb-7" aria-live="polite">0</output>
+     <div id="calc-keys" class="grid grid-cols-4 gap-2"><button class="calc-key" data-key="C" type="button">C</button><button class="calc-key" data-key="⌫" type="button">⌫</button><button class="calc-key operator" data-key="÷" type="button">÷</button><button class="calc-key operator" data-key="×" type="button">×</button> <button class="calc-key" data-key="7" type="button">7</button><button class="calc-key" data-key="8" type="button">8</button><button class="calc-key" data-key="9" type="button">9</button><button class="calc-key operator" data-key="−" type="button">−</button> <button class="calc-key" data-key="4" type="button">4</button><button class="calc-key" data-key="5" type="button">5</button><button class="calc-key" data-key="6" type="button">6</button><button class="calc-key operator" data-key="+" type="button">+</button> <button class="calc-key" data-key="1" type="button">1</button><button class="calc-key" data-key="2" type="button">2</button><button class="calc-key" data-key="3" type="button">3</button><button class="calc-key equals row-span-2 h-full" data-key="=" type="button">=</button> <button class="calc-key col-span-2" data-key="0" type="button">0</button><button class="calc-key" data-key="." type="button">.</button>
+     </div>
+    </div>
+   </section>
+   <section id="clock" class="app-view" hidden="" aria-label="Clock app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-10" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Clock</h2>
+     <div class="glass rounded-3xl text-center p-8">
+      <p class="uppercase tracking-[.2em] mb-5" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(12px * var(--scale));">Local time</p>
+      <p id="clock-large" class="text-5xl font-light tracking-tight"></p>
+      <p id="clock-date" class="text-white/70 mt-4"></p>
+     </div>
+    </div>
+   </section>
+   <section id="weather" class="app-view" hidden="" aria-label="Weather app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-9" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Weather</h2>
+     <div class="glass rounded-3xl p-8 text-center">
+      <i data-lucide="cloud-sun" class="w-14 h-14 mx-auto mb-5 text-cyan-200"></i>
+      <p id="weather-place" class="uppercase tracking-widest" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(12px * var(--scale));">Sample weather · Dubai</p>
+      <p id="weather-temperature" class="my-3" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(72px * var(--scale));">29°</p>
+      <p id="weather-condition" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Partly cloudy</p>
+     </div>
+     <p id="weather-note" class="mt-6" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Sample conditions, not a live forecast. A live forecast appears when this device is online.</p>
+    </div>
+   </section>
+   <section id="music" class="app-view" hidden="" aria-label="Music app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-9" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Music</h2>
+     <div class="glass rounded-3xl p-8 text-center">
+      <div class="w-32 h-32 mx-auto rounded-[32px] bg-gradient-to-br from-[#e3b9e9] to-[#516c9c] grid place-items-center mb-7">
+       <i data-lucide="music-2" class="w-14 h-14 text-[#16253f]"></i>
+      </div>
+      <p class="font-bold" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Soft Signals</p>
+      <p class="mt-2 mb-7" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">An ambient melody generated on this device.</p><button id="music-play" class="action" type="button" style="background: %%ACCENT_MINT%%; color: rgb(16, 34, 44); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Play melody</button><button id="music-stop" class="action" type="button" hidden="" style="background: %%ACCENT_MINT%%; color: rgb(16, 34, 44); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Stop melody</button>
+     </div>
+    </div>
+   </section>
+   <section id="photos" class="app-view" hidden="" aria-label="Photos app">
+    <div class="app-content">
+     <h2 class="font-bold mb-4" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Photos</h2>
+     <p class="mb-6" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">A small gallery. Tap an image to take a closer look.</p>
+     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3"><button class="photo-button rounded-2xl overflow-hidden" type="button" aria-label="View cosmic abstract photo"><img class="photo-thumb w-full" loading="lazy" %%ASSET:photo1%%></button> <button class="photo-button rounded-2xl overflow-hidden" type="button" aria-label="View colorful abstract photo"><img class="photo-thumb w-full" loading="lazy" %%ASSET:photo2%%></button> <button class="photo-button rounded-2xl overflow-hidden" type="button" aria-label="View blue and purple smoke photo"><img class="photo-thumb w-full" loading="lazy" %%ASSET:photo3%%></button>
+     </div>
+    </div>
+   </section>
+   <section id="browser" class="app-view" hidden="" aria-label="Tabbed browser">
+    <div class="app-content">
+     <h2 class="font-bold mb-3" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Browser</h2>
+     <p class="mb-6" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Browse with tabs and history. Websites open in a separate browser window.</p>
+     <div class="browser-tabs" role="tablist" aria-label="Browser tabs">
+      <div id="browser-tab-list" class="flex items-end gap-1"></div><button id="browser-new-tab" class="small-action mb-1" type="button" aria-label="New tab">＋</button>
+     </div>
+     <div class="glass rounded-b-2xl rounded-tr-2xl p-4 sm:p-6">
+      <form id="browser-form" class="browser-toolbar"><button id="browser-back" class="small-action" type="button" aria-label="Back" disabled="">←</button> <button id="browser-forward" class="small-action" type="button" aria-label="Forward" disabled="">→</button> <label class="sr-only" for="browser-address" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Website address or search</label> <input id="browser-address" class="field" type="text" maxlength="500" autocomplete="off" required="" aria-label="Website address or search"> <button class="action" type="submit" style="background: %%ACCENT_MINT%%; color: rgb(16, 34, 44); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Go ↗</button>
+      </form>
+      <div class="py-12 sm:py-20 text-center max-w-xl mx-auto"><i data-lucide="globe-2" class="w-12 h-12 mx-auto mb-5 text-[%%ACCENT_MINT%%]"></i>
+       <h3 class="font-bold mb-3" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(19px * var(--scale));">A place to start exploring.</h3>
+       <p id="browser-note" class="mb-6" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Enter a website or search above. Pages open in a separate browser window; press the Home key or use the Home button to come back here. Back and forward navigate this tab’s address history.</p>
+       <p id="browser-current" class="break-all text-white/70 mb-5" aria-live="polite"></p><button id="browser-open" class="action" type="button" style="background: %%ACCENT_MINT%%; color: rgb(16, 34, 44); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Open current website ↗</button>
+      </div>
+     </div>
+    </div>
+   </section>
+   <section id="files" class="app-view" hidden="" aria-label="Files app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-4" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Files</h2>
+     <p id="files-note" class="mb-5" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Keep small text files together in your workspace.</p>
+     <form id="file-form" class="space-y-3 mb-7">
+      <label class="block" for="file-name" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">File name</label><input id="file-name" class="field" maxlength="80" required=""><label class="block" for="file-content" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Contents</label><textarea id="file-content" class="field resize-none" rows="3" maxlength="1000"></textarea><button class="action w-full" type="submit" style="background: %%ACCENT_MINT%%; color: rgb(16, 34, 44); font-weight: 700; font-style: normal; font-size: calc(16px * var(--scale));">Save file</button>
+     </form>
+     <p id="file-loading" class="text-white/60">Loading saved files…</p>
+     <p id="file-empty" hidden="" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">No files yet. Create one above.</p>
+     <div id="file-list" class="space-y-3"></div>
+    </div>
+   </section>
+   <section id="calendar" class="app-view" hidden="" aria-label="Calendar app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-7" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Calendar</h2>
+     <div class="glass rounded-3xl p-5 sm:p-8">
+      <div class="flex items-center justify-between mb-7">
+       <button id="month-prev" class="small-action" type="button" aria-label="Previous month">←</button>
+       <h3 id="month-heading" class="font-semibold text-center"></h3><button id="month-next" class="small-action" type="button" aria-label="Next month">→</button>
+      </div>
+      <div class="grid grid-cols-7 text-center text-white/50 text-sm mb-3">
+       <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+      </div>
+      <div id="calendar-days" class="grid grid-cols-7 gap-1 text-center"></div>
+     </div><button id="month-today" class="small-action mt-5" type="button" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Jump to today</button>
+    </div>
+   </section>
+   <section id="settings" class="app-view" hidden="" aria-label="Settings app">
+    <div class="app-content app-narrow">
+     <h2 class="font-bold mb-7" style="color: rgb(255, 255, 255); font-weight: 700; font-style: normal; font-size: calc(24px * var(--scale));">Settings</h2>
+     <h3 class="font-bold mb-2" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(19px * var(--scale));">Appearance &amp; display</h3>
+     <div class="item mb-6">
+      <div class="setting-row">
+       <div>
+        <label for="setting-alt" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Wallpaper mood</label>
+        <p style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Shift the wallpaper toward a deeper teal.</p>
+       </div><input id="setting-alt" type="checkbox">
+      </div>
+      <div class="setting-row">
+       <div>
+        <label for="setting-accent" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Accent color</label>
+        <p style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Choose a highlight for controls and focus.</p>
+       </div><select id="setting-accent" class="field w-auto"><option value="mint">Mint</option><option value="peach">Peach</option><option value="blue">Blue</option></select>
+      </div>
+      <div class="setting-row">
+       <div>
+        <label for="setting-brightness" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Brightness</label>
+        <p id="brightness-note" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Adjust wallpaper brightness without resizing the workspace.</p>
+       </div><input id="setting-brightness" type="range" min="45" max="110" value="100">
+      </div>
+      <div class="setting-row">
+       <div>
+        <label for="setting-scale" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Text scale</label>
+        <p style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Adjust interface text from 90% to 120%.</p>
+       </div><input id="setting-scale" type="range" min="90" max="120" value="100">
+      </div>
+      <div class="setting-row">
+       <div>
+        <label for="setting-motion" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Reduce motion</label>
+        <p style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Turn off interface transitions and reveals.</p>
+       </div><input id="setting-motion" type="checkbox">
+      </div>
+     </div>
+     <h3 class="font-bold mb-2" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(19px * var(--scale));">Sound &amp; system</h3>
+     <div class="item mb-6">
+      <div class="setting-row">
+       <div>
+        <label for="setting-focus" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Focus mode</label>
+        <p style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Dim and simplify the wallpaper.</p>
+       </div><input id="setting-focus" type="checkbox">
+      </div>
+      <div class="setting-row">
+       <div>
+        <label for="setting-quiet" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Quiet mode</label>
+        <p id="quiet-note" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Prevent the built-in melody from starting.</p>
+       </div><input id="setting-quiet" type="checkbox">
+      </div>
+      <div class="setting-row">
+       <div>
+        <label for="setting-clock24" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">24-hour clock</label>
+        <p style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Change the displayed time format.</p>
+       </div><input id="setting-clock24" type="checkbox">
+      </div>
+      <div id="wifi-row" class="setting-row">
+       <div>
+        <label id="wifi-label" for="setting-wifi" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Wi-Fi indicator</label>
+        <p id="wifi-note" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Preview only: changes the status icon, not a real radio.</p>
+        <button id="wifi-networks-open" class="small-action mt-2" type="button" hidden="">Choose a network…</button>
+       </div><input id="setting-wifi" type="checkbox" checked="">
+      </div>
+      <div id="bluetooth-row" class="setting-row">
+       <div>
+        <label id="bluetooth-label" for="setting-bluetooth" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Bluetooth indicator</label>
+        <p id="bluetooth-note" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Preview only: changes the quick-settings tile, not a real radio.</p>
+        <button id="bluetooth-devices-open" class="small-action mt-2" type="button" hidden="">Pair a device…</button>
+       </div><input id="setting-bluetooth" type="checkbox">
+      </div>
+     </div>
+     <div id="system-settings" hidden="">
+      <h3 class="font-bold mb-2" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(19px * var(--scale));">Date &amp; time</h3>
+      <div class="item mb-6">
+       <div class="setting-row">
+        <div>
+         <label for="setting-timezone" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Time zone</label>
+         <p id="time-sync-note" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Checking network time…</p>
+        </div><select id="setting-timezone" class="field w-auto"></select>
+       </div>
+      </div>
+      <h3 class="font-bold mb-2" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(19px * var(--scale));">Weather</h3>
+      <div class="item mb-6">
+       <div class="setting-row">
+        <div>
+         <label for="setting-weather-place" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Forecast location</label>
+         <p id="weather-place-note" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));">Search for a city. Forecasts come from Open-Meteo.com.</p>
+        </div>
+        <form id="weather-place-form" class="flex gap-2"><input id="setting-weather-place" class="field" maxlength="80" autocomplete="off" placeholder="City"><button class="small-action" type="submit">Set</button></form>
+       </div>
+      </div>
+      <h3 class="font-bold mb-2" style="color: %%ACCENT_MINT%%; font-weight: 400; font-style: normal; font-size: calc(19px * var(--scale));">Storage</h3>
+      <div class="item mb-6">
+       <div class="setting-row">
+        <div>
+         <p id="storage-title" class="font-semibold" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(16px * var(--scale));">Checking storage…</p>
+         <p id="storage-note" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(13px * var(--scale));"></p>
+        </div><button id="storage-setup-open" class="small-action shrink-0" type="button" hidden="">Set up storage…</button>
+       </div>
+       <div id="usb-list" class="space-y-3"></div>
+      </div>
+     </div>
+     <p id="settings-about" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">%%NAME%% %%VERSION%% · running as a preview in a web browser. System controls are unavailable here.</p>
+    </div>
+   </section>
+   <div id="photo-modal" class="photo-modal" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden="">
+    <button id="photo-close" class="close-photo small-action" type="button" aria-label="Close photo">✕</button><img id="photo-large" alt="">
+   </div>
+   <div id="power-dialog" class="photo-modal" role="dialog" aria-modal="true" aria-labelledby="power-title" hidden="">
+    <div class="glass rounded-3xl p-8 w-full max-w-md text-center">
+     <i data-lucide="power" class="w-12 h-12 mx-auto mb-5 text-[%%ACCENT_MINT%%]"></i>
+     <h2 id="power-title" class="font-bold mb-2" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(24px * var(--scale)); font-weight: 700;">Power</h2>
+     <p id="power-note" class="mb-7" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Your notes, tasks, files and settings are saved before the device turns off.</p>
+     <div class="grid grid-cols-2 gap-3"><button id="power-off" class="action" type="button">Shut down</button><button id="power-restart" class="small-action" type="button">Restart</button></div>
+     <button id="power-cancel" class="small-action mt-5" type="button">Cancel</button>
+    </div>
+   </div>
+   <section id="network-panel" class="overlay" hidden="" aria-label="Wi-Fi networks">
+    <div class="overlay-inner app-narrow">
+     <div class="flex justify-between items-center mb-4">
+      <h2 class="font-bold" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(24px * var(--scale)); font-weight: 700;">Wi-Fi networks</h2><button data-close-panel="" class="small-action" type="button" aria-label="Close Wi-Fi networks">✕</button>
+     </div>
+     <p id="network-note" class="mb-6" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Scanning…</p>
+     <div id="network-list" class="space-y-3"></div>
+     <form id="network-join" class="item space-y-3 mt-6" hidden="">
+      <p id="network-join-name" class="font-semibold"></p>
+      <label class="block" for="network-password" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Password</label><input id="network-password" class="field" type="password" maxlength="63" autocomplete="off">
+      <div class="flex gap-3"><button class="action" type="submit">Connect</button><button id="network-join-cancel" class="small-action" type="button">Cancel</button></div>
+     </form>
+    </div>
+   </section>
+   <section id="bluetooth-panel" class="overlay" hidden="" aria-label="Bluetooth devices">
+    <div class="overlay-inner app-narrow">
+     <div class="flex justify-between items-center mb-4">
+      <h2 class="font-bold" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(24px * var(--scale)); font-weight: 700;">Bluetooth devices</h2><button data-close-panel="" class="small-action" type="button" aria-label="Close Bluetooth devices">✕</button>
+     </div>
+     <p id="bluetooth-panel-note" class="mb-6" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Searching for nearby devices…</p>
+     <div id="bluetooth-list" class="space-y-3"></div>
+    </div>
+   </section>
+   <div id="storage-dialog" class="photo-modal" role="dialog" aria-modal="true" aria-labelledby="storage-dialog-title" hidden="">
+    <div class="glass rounded-3xl p-8 w-full max-w-md">
+     <h2 id="storage-dialog-title" class="font-bold mb-2" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(24px * var(--scale)); font-weight: 700;">Set up storage</h2>
+     <p class="mb-5" style="color: rgb(189, 204, 224); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Only empty disks are listed. The disk you choose is formatted for %%NAME%% and anything on it is erased.</p>
+     <div id="storage-candidates" class="space-y-3 mb-5"></div>
+     <label class="block mb-2" for="storage-confirm" style="color: rgb(255, 255, 255); font-weight: 400; font-style: normal; font-size: calc(14px * var(--scale));">Type the disk name shown above to confirm</label><input id="storage-confirm" class="field mb-5" autocomplete="off">
+     <div class="flex gap-3"><button id="storage-format" class="action" type="button" disabled="">Erase and set up</button><button id="storage-cancel" class="small-action" type="button">Cancel</button></div>
+    </div>
+   </div>
+   <div id="toast" class="toast" role="status" aria-live="polite" hidden=""></div>
+   <nav class="bottom-dock glass" aria-label="System navigation"><button data-open="drawer" type="button" aria-label="All apps"><i data-lucide="layout-grid"></i></button> <button id="home-button" class="home-indicator" type="button" aria-label="Go home"></button> <button data-open="shade" type="button" aria-label="Quick settings"><i data-lucide="sliders-horizontal"></i></button>
+   </nav>
+  </main>
+  <template id="note-template">
+   <article class="item">
+    <div class="flex justify-between gap-3">
+     <h3 data-role="saved-note-title" class="font-semibold break-words min-w-0"></h3><button class="small-action shrink-0" type="button" aria-label="Delete note">Delete</button>
+    </div>
+    <p data-role="saved-note-content" class="whitespace-pre-wrap break-words mt-2"></p>
+   </article>
+  </template>
+  <template id="task-template">
+   <article class="item flex gap-3 items-center">
+    <input class="task-checkbox w-5 h-5 shrink-0" type="checkbox" aria-label="Mark task complete"><span data-role="saved-task-title" class="flex-1 break-words min-w-0"></span><button class="small-action shrink-0" type="button" aria-label="Delete task">Delete</button>
+   </article>
+  </template>
+  <template id="file-template">
+   <article class="item">
+    <div class="flex justify-between gap-3">
+     <h3 data-role="saved-file-title" class="font-semibold break-words min-w-0"></h3><button class="small-action shrink-0" type="button" aria-label="Delete file">Delete</button>
+    </div>
+    <p data-role="saved-file-content" class="whitespace-pre-wrap break-words mt-2"></p>
+   </article>
+  </template>  <script src="vendor/lucide.min.js"></script>
+  <script src="js/nova-api.js"></script>
+  <script src="js/data-sdk.js"></script>
+  <script src="js/system.js"></script>
+  <script src="js/boot.js"></script>
+ </body>
+</html>

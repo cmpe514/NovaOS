@@ -1,0 +1,17 @@
+{
+  "_comment": "Single source of truth for branding. Rename the project here; `make ui` and `make iso` pick it up.",
+  "name": "NovaOS",
+  "id": "novaos",
+  "tagline": "Make room for what matters.",
+  "version": "0.1.0",
+  "accents": {
+    "mint": "#86f4ef",
+    "peach": "#ffc4a6",
+    "blue": "#a7c8ff"
+  },
+  "search_url": "https://www.google.com/search?q=",
+  "hostname": "novaos",
+  "user": "nova",
+  "daemon_port": 7171,
+  "debian_suite": "trixie"
+}

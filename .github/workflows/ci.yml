@@ -1,6 +1,7 @@
 # NovaOS CI.
 #   checks  every push / PR: shellcheck, Go vet + race tests, UI build, Playwright (preview, device,
-#           visual), headless sway session test.                                   ~10 min
+#           visual).                                                               ~5 min
+#   session every push / PR: the real sway session headless (tests/session).      ~5 min
 #   iso     pushes to main and claude/** branches, or "Run workflow": builds the ISO in the privileged
 #           builder container and boots it in QEMU/KVM (BIOS, UEFI, two-boot persistence).  ~40-60 min
 #           Uploads logs and screenshots; the ISO itself only when "upload_iso" is ticked (it is large).
@@ -49,8 +50,6 @@ jobs:
       - name: Playwright
         working-directory: tests
         run: npm ci && npx playwright install --with-deps chromium && CI=1 npx playwright test
-      - name: Headless session test (sway + Chromium + novad)
-        run: NOVA_CHROMIUM="$(find ~/.cache/ms-playwright -path '*chrome-linux*/chrome' -type f | head -1)" tests/session/session-test.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -58,6 +57,37 @@ jobs:
           path: |
             tests/report
             tests/results
+          retention-days: 7
+
+  session:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.24', cache-dependency-path: daemon/go.mod }
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Tools
+        run: sudo apt-get update && sudo apt-get install -y sway grim wtype jq
+      - name: Allow Chromium's user-namespace sandbox (Ubuntu 24.04 restricts it through AppArmor)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+      - name: Build UI and novad
+        run: FETCH_ASSETS=0 tools/build-ui.sh && SKIP_TESTS=1 tools/build-daemon.sh
+      - name: Chromium
+        working-directory: tests
+        run: npm ci && npx playwright install --with-deps chromium
+      - name: Headless session test (sway + Chromium + novad)
+        timeout-minutes: 8
+        run: NOVA_CHROMIUM="$(find ~/.cache/ms-playwright -path '*chrome-linux*/chrome' -type f | head -1)" tests/session/session-test.sh
+      - name: The shell browser cannot reach the network
+        timeout-minutes: 3
+        run: NOVA_CHROMIUM="$(find ~/.cache/ms-playwright -path '*chrome-linux*/chrome' -type f | head -1)" tests/session/shell-network-test.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: session-results
+          path: tests/results/session
           retention-days: 7
 
   iso:

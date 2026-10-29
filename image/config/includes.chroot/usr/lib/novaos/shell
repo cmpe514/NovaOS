@@ -16,6 +16,11 @@ flags=(
   --password-store=basic
   --overscroll-history-navigation=0 --disable-pinch --hide-scrollbars
   --check-for-update-interval=31536000
+  # The shell must reach novad and nothing else. Flags alone do not stop Chromium's own background
+  # requests (sign-in checks, GCM check-in, network time, update pings), so every non-loopback request
+  # goes to a dead proxy and every host name except localhost fails to resolve. Loopback is exempt.
+  --proxy-server=http://127.0.0.1:9
+  "--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE localhost , EXCLUDE 127.0.0.1"
 )
 /usr/bin/novad wait --listen 127.0.0.1:%%PORT%% --timeout 90s || echo "novad is slow to start; trying anyway" >&2
 while true; do

@@ -48,9 +48,14 @@ for _ in $(seq 50); do sock="$(compgen -G "$XDG_RUNTIME_DIR/sway-ipc.*.sock" | h
 [[ -n "${sock:-}" ]] || { cat "$tmp/sway.log"; die "sway did not start"; }
 export SWAYSOCK="$sock"
 WAYLAND_DISPLAY="$(basename "$(compgen -G "$XDG_RUNTIME_DIR/wayland-*" | grep -v "\.lock$" | head -1)")"; export WAYLAND_DISPLAY
-swaymsg -q output HEADLESS-1 mode 1440x900
 
 fail() { cp "$tmp/sway.log" "$out/sway.log"; ps -u "$(id -u)" -o pid,args > "$out/procs.txt"; swaymsg -t get_bar_config novaos > "$out/bar.json" 2>&1; swaymsg -t get_tree > "$out/tree.json" 2>/dev/null || true; grim "$out/failure.png" 2>/dev/null || true; die "$1 (see tests/results/session/sway.log, tree.json)"; }
+# Bound every compositor call: a wedged compositor must fail the test, not hang it.
+SWAYMSG_BIN="$(command -v swaymsg)"; GRIM_BIN="$(command -v grim)"; WTYPE_BIN="$(command -v wtype)"
+swaymsg() { timeout 5 "$SWAYMSG_BIN" "$@"; }
+grim()    { timeout 10 "$GRIM_BIN" "$@"; }
+wtype()   { timeout 5 "$WTYPE_BIN" "$@"; }
+swaymsg -q output HEADLESS-1 mode 1440x900
 window() { swaymsg -r -t get_tree | jq -e --arg re "$1" '[.. | objects | select((.app_id? // "") | test($re))] | length > 0' >/dev/null; }
 focused_ws() { swaymsg -r -t get_workspaces | jq -r '.[] | select(.focused) | .num'; }
 bar_mode() { swaymsg -r -t get_bar_config novaos | jq -r .mode; }
@@ -84,6 +89,7 @@ wait_for "the bar to hide on the shell" 5 bar_is invisible
 wait_for "the shell to fill the screen" 5 rect_is 1440x900
 sleep 1; grim "$out/1-home.png"; not_blank "$out/1-home.png" >/dev/null || fail "the home screen screenshot is blank"
 log "PASS shell fills the screen on workspace 1 (bar hidden), NOVAOS_READY seen"
+if [[ -n "${HOLD_SHELL_SECONDS:-}" ]]; then log "holding on the shell for ${HOLD_SHELL_SECONDS}s (HOLD_SHELL_SECONDS)"; sleep "$HOLD_SHELL_SECONDS"; log "hold finished at $(date -u +%H:%M:%S)"; fi
 
 log "opening a website window (as the Browser app does)"
 chromium --class=novaos-web --user-data-dir="$tmp/web" --ozone-platform=wayland --no-first-run --no-default-browser-check \

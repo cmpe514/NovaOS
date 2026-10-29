@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "description": "NovaOS shell UI: offline build of the original single-file workspace",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "scripts": {
     "build": "node tools/build.mjs",
     "serve": "node tools/serve-static.mjs"

@@ -2,7 +2,7 @@
 #   checks  every push / PR: shellcheck, Go vet + race tests, UI build, Playwright (preview, device,
 #           visual).                                                               ~5 min
 #   session every push / PR: the real sway session headless (tests/session).      ~5 min
-#   iso     pushes to main and claude/** branches, or "Run workflow": builds the ISO in the privileged
+#   iso     pushes to main, or "Run workflow": builds the ISO in the privileged
 #           builder container and boots it in QEMU/KVM (BIOS, UEFI, two-boot persistence).  ~40-60 min
 #           Uploads logs and screenshots; the ISO itself only when "upload_iso" is ticked (it is large).
 name: ci
@@ -24,7 +24,8 @@ permissions:
   contents: read
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Queue instead of cancelling: an ISO build and boot test is never thrown away half-way.
+  cancel-in-progress: false
 
 jobs:
   checks:
@@ -92,7 +93,7 @@ jobs:
 
   iso:
     needs: checks
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/claude/')))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-24.04
     timeout-minutes: 150
     steps:

@@ -23,6 +23,8 @@ firmware → GRUB → Plymouth splash → systemd → sway (kiosk) → Chromium 
 > or booted where this was developed, because that sandbox had no Debian mirror and no KVM. CI is set up to
 > build and boot it on GitHub (`.github/workflows/ci.yml`). See [What has been verified](#what-has-been-verified).
 
+**New here? → [INSTALL.md](INSTALL.md)** explains in a few steps how to download, try and install NovaOS.
+
 ---
 
 ## Quick start

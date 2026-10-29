@@ -1,0 +1,48 @@
+# Builds the ISO and publishes it as a GitHub Release, so people can download it instead of building.
+#   Actions → release → Run workflow (enter a tag such as v0.1.0), or push a tag: git tag v0.1.0 && git push origin v0.1.0
+name: release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to create (e.g. v0.1.0)
+        required: true
+        default: v0.1.0
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - name: Build the ISO
+        run: make iso
+      - name: Boot test (BIOS, UEFI, persistence)
+        run: make smoke
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          cd out
+          iso="$(ls -t novaos-*.iso | head -1)"
+          cat > notes.md <<NOTES
+          Download **$iso**, check it with the \`.sha256\` file, then follow [INSTALL.md](https://github.com/${{ github.repository }}/blob/main/INSTALL.md).
+
+          This ISO passed the automated boot test (BIOS and UEFI in QEMU/KVM, data kept across a reboot).
+          Screenshots from that test are attached (smoke-*.png).
+          NOTES
+          for f in smoke/*.png; do cp "$f" "smoke-$(basename "$f")"; done
+          gh release create "$TAG" --title "NovaOS $TAG" --notes-file notes.md --target "${{ github.sha }}" \
+            "$iso" "$iso.sha256" smoke-*.png

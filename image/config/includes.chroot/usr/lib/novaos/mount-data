@@ -2,7 +2,7 @@
 # Mounts the NOVA-DATA partition (ext4, found by label) on /var/lib/novaos and prepares the user's
 # directories. Never formats anything: blank disks are only set up from Settings, after confirmation.
 set -euo pipefail
-target=/var/lib/novaos
+target="${NOVA_DATA_TARGET:-/var/lib/novaos}"   # overridable for tests only
 user=%%USER%%
 label=NOVA-DATA
 log() { echo "novaos-data: $*"; }
@@ -36,6 +36,9 @@ else
 fi
 
 install -d -m 0755 -o root -g root "$target"
+install -d -m 0700 -o "$user" -g "$user" "$target/data" "$target/home"
+for d in Documents Pictures Downloads; do install -d -m 0700 -o "$user" -g "$user" "$target/home/$d"; done
+
 # System state that should survive a reboot when there is a data disk: known Wi-Fi networks, paired
 # Bluetooth devices and the time zone. On the live system these paths are otherwise in RAM.
 if mountpoint -q "$target"; then
@@ -45,9 +48,11 @@ if mountpoint -q "$target"; then
   mountpoint -q /var/lib/bluetooth || mount --bind "$target/system/bluetooth" /var/lib/bluetooth
 fi
 # The time zone chosen in Settings is stored by novad in settings.json; apply it before anything starts.
-zone="$(sed -n 's/.*"system_timezone": *"\([A-Za-z0-9_+\/-]*\)".*/\1/p' "$target/data/settings.json" 2>/dev/null | head -1)"
+zone=""
+if [[ -f "$target/data/settings.json" ]]; then
+  zone="$(sed -n 's/.*"system_timezone": *"\([A-Za-z0-9_+\/-]*\)".*/\1/p' "$target/data/settings.json" | head -n 1 || true)"
+fi
 if [[ -n "$zone" && "$zone" != *..* && -f "/usr/share/zoneinfo/$zone" ]]; then
   ln -sf "/usr/share/zoneinfo/$zone" /etc/localtime && echo "$zone" > /etc/timezone && log "time zone $zone"
 fi
-install -d -m 0700 -o "$user" -g "$user" "$target/data" "$target/home"
-for d in Documents Pictures Downloads; do install -d -m 0700 -o "$user" -g "$user" "$target/home/$d"; done
+exit 0

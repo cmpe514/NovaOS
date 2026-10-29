@@ -1,0 +1,14 @@
+#!/bin/sh
+# live-build names the kernel and initrd after the kernel version (vmlinuz-6.12.x-amd64). The boot menu
+# (bootloaders/grub-pc/grub.cfg) uses fixed names, so give the single kernel those names here, before
+# live-build writes checksums and the ISO.
+set -eu
+dir=binary/live
+[ -d "$dir" ] || dir=live
+for kind in vmlinuz initrd.img; do
+  set -- "$dir"/"$kind"-*
+  [ -e "$1" ] || { [ -e "$dir/$kind" ] && continue; echo "E: novaos: no $kind in $dir" >&2; exit 1; }
+  [ "$#" -eq 1 ] || { echo "E: novaos: expected one $kind in $dir, found $#" >&2; exit 1; }
+  mv "$1" "$dir/$kind"
+  echo "I: novaos: $1 -> $dir/$kind"
+done

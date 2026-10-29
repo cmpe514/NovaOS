@@ -19,9 +19,10 @@ firmware → GRUB → Plymouth splash → systemd → sway (kiosk) → Chromium 
 - **Reproducible.** Every build input is pinned. One command builds the ISO in a container, and one boots it
   in QEMU.
 
-> **Status (honest):** all code is written and most of it is tested. The ISO itself has **not** yet been built
-> or booted where this was developed, because that sandbox had no Debian mirror and no KVM. CI is set up to
-> build and boot it on GitHub (`.github/workflows/ci.yml`). See [What has been verified](#what-has-been-verified).
+> **Status:** GitHub Actions builds the ISO (1,145 MiB) and boots it in QEMU/KVM on every push to `main`. It
+> reaches the home screen in about 23 s on both BIOS and UEFI, and data on a NOVA-DATA disk survives a clean
+> reboot. Real hardware, VirtualBox, VMware and UTM have not been tested yet. See
+> [What has been verified](#what-has-been-verified).
 
 **New here? → [INSTALL.md](INSTALL.md)** explains in a few steps how to download, try and install NovaOS.
 
@@ -210,7 +211,7 @@ Nothing else needs to change.
 | `make iso` produces a bootable ISO (1,145 MiB) | **VERIFIED** in GitHub Actions (Debian live-build in the builder container) |
 | BIOS boot through GRUB to the NovaOS home screen (24 s), non-blank screenshot, clean power-button shutdown | **VERIFIED** in GitHub Actions (QEMU/KVM, `make smoke`) |
 | UEFI boot through GRUB to the NovaOS home screen (22 s), non-blank screenshot, clean power-button shutdown | **VERIFIED** in GitHub Actions (QEMU/KVM, OVMF, `make smoke`) |
-| Notes/settings survive a clean reboot on a NOVA-DATA disk | being verified by CI's `iso` job (`make smoke`, two boots) |
+| Data survives a clean reboot on a NOVA-DATA disk (boot 1 writes, power-button shutdown, boot 2 reads `boots=2`) | **VERIFIED** in GitHub Actions (`make smoke`) |
 | Builder container, `make doctor` on macOS/Windows | **UNVERIFIED** |
 | Real NetworkManager, BlueZ, PipeWire, logind backlight, udisks2, polkit rules, Plymouth handover, squeekboard | **UNVERIFIED** (command lines unit-tested against stubs) |
 | VirtualBox, VMware, UTM, real hardware, Secure Boot | **UNVERIFIED** |

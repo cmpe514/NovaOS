@@ -62,15 +62,18 @@ func newStubEnv(t *testing.T, outputs map[string]string) *stubEnv {
 				fmt.Fprintf(&cases, "  %q) cat <<'NOVA_EOF'\n%s\nNOVA_EOF\n  ;;\n", args, out)
 			}
 		}
+		// Each stub writes its whole log line with one append: some tools (chromium) run in the
+		// background, and piecewise writes from two stubs would interleave.
 		script := fmt.Sprintf(`#!/bin/sh
-printf '%%s' %q >> %q
-for a in "$@"; do printf ' [%%s]' "$a" >> %q; done
-printf '\n' >> %q
-for a in "$@"; do case "$a" in */.wifi-*) printf 'passwd-file:' >> %q; cat "$a" >> %q;; esac; done
+line=%q
+for a in "$@"; do line="$line [$a]"; done
+for a in "$@"; do case "$a" in */.wifi-*) line="$line
+passwd-file:$(cat "$a")";; esac; done
+printf '%%s\n' "$line" >> %q
 case "$*" in
 %s  *) ;;
 esac
-`, tool, e.log, e.log, e.log, e.log, e.log, cases.String())
+`, tool, e.log, cases.String())
 		if err := os.WriteFile(filepath.Join(e.bin, tool), []byte(script), 0o755); err != nil {
 			t.Fatal(err)
 		}

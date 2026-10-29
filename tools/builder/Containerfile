@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       live-build debootstrap xorriso squashfs-tools mtools dosfstools \
       grub-pc-bin grub-efi-amd64-bin grub-common syslinux-common isolinux \
       golang-go nodejs npm \
-      git make ca-certificates curl rsync python3 file shellcheck \
+      git make ca-certificates curl rsync python3 file shellcheck e2fsprogs \
       qemu-system-x86 qemu-system-arm qemu-utils ovmf qemu-efi-aarch64 \
       chromium fonts-dejavu-core \
  && rm -rf /var/lib/apt/lists/* \

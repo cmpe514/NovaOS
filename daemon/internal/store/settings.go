@@ -19,6 +19,8 @@ type settingsFile struct {
 	Version int            `json:"version"`
 	UI      map[string]any `json:"ui"`
 	Weather *Place         `json:"weather,omitempty"`
+	// Timezone is re-applied at boot by /usr/lib/novaos/mount-data (the live system's /etc is in RAM).
+	Timezone string `json:"system_timezone,omitempty"`
 }
 
 // Settings persists the shell's UI settings (wallpaper mood, accent, text scale, …) and the weather place.
@@ -126,6 +128,23 @@ func (s *Settings) WeatherPlace() *Place {
 	}
 	p := *s.data.Weather
 	return &p
+}
+
+// SetTimezone remembers the chosen time zone so it can be restored on the next boot.
+func (s *Settings) SetTimezone(zone string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.loadErr != nil {
+		return s.loadErr
+	}
+	next := s.data
+	next.Version = 1
+	next.Timezone = zone
+	if err := writeJSONAtomic(s.path, next); err != nil {
+		return err
+	}
+	s.data = next
+	return nil
 }
 
 // SetWeatherPlace saves the forecast location (nil clears it).

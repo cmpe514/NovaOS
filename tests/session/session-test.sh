@@ -47,7 +47,7 @@ sway_pid=$!
 for _ in $(seq 50); do sock="$(compgen -G "$XDG_RUNTIME_DIR/sway-ipc.*.sock" | head -1 || true)"; [[ -n "$sock" ]] && break; sleep 0.2; done
 [[ -n "${sock:-}" ]] || { cat "$tmp/sway.log"; die "sway did not start"; }
 export SWAYSOCK="$sock"
-export WAYLAND_DISPLAY="$(basename "$(compgen -G "$XDG_RUNTIME_DIR/wayland-*" | grep -v "\.lock$" | head -1)")"
+WAYLAND_DISPLAY="$(basename "$(compgen -G "$XDG_RUNTIME_DIR/wayland-*" | grep -v "\.lock$" | head -1)")"; export WAYLAND_DISPLAY
 swaymsg -q output HEADLESS-1 mode 1440x900
 
 fail() { cp "$tmp/sway.log" "$out/sway.log"; ps -u "$(id -u)" -o pid,args > "$out/procs.txt"; swaymsg -t get_bar_config novaos > "$out/bar.json" 2>&1; swaymsg -t get_tree > "$out/tree.json" 2>/dev/null || true; grim "$out/failure.png" 2>/dev/null || true; die "$1 (see tests/results/session/sway.log, tree.json)"; }

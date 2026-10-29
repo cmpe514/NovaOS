@@ -1,0 +1,9 @@
+# Added only to DEBUG=1 builds (tools/build-iso.sh renames this file): a developer console and SSH.
+openssh-server
+sudo
+less
+nano
+htop
+strace
+curl
+jq

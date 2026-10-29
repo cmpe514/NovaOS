@@ -120,7 +120,18 @@ func (s *server) ready(w http.ResponseWriter, r *http.Request) {
 		if b, err := os.ReadFile("/proc/uptime"); err == nil {
 			uptime = strings.Fields(string(b))[0]
 		}
-		s.Log.Printf("NOVAOS_READY shell rendered %s s after boot", uptime)
+		st, _ := s.System.Status(r.Context())
+		persistent := "no"
+		if st.Storage.Persistent {
+			persistent = "yes"
+		}
+		boots, err := store.CountBoot(s.DataDir)
+		write := "ok"
+		if err != nil {
+			write = "failed"
+			s.Log.Printf("could not record the boot: %v", err)
+		}
+		s.Log.Printf("NOVAOS_READY uptime=%ss persistent=%s boots=%d write=%s", uptime, persistent, boots, write)
 	})
 	writeJSON(w, 200, map[string]bool{"ok": true})
 }
@@ -347,7 +358,11 @@ func (s *server) setTimezone(w http.ResponseWriter, r *http.Request) {
 		s.fail(w, r, err)
 		return
 	}
-	s.done(w, r, s.System.SetTimezone(r.Context(), body.Timezone))
+	if err := s.System.SetTimezone(r.Context(), body.Timezone); err != nil {
+		s.fail(w, r, err)
+		return
+	}
+	s.done(w, r, s.Settings.SetTimezone(body.Timezone))
 }
 
 // ---------- weather ----------

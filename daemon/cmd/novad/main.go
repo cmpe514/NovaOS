@@ -159,7 +159,7 @@ func serve(args []string) int {
 	}
 
 	handler, err := server.New(server.Options{
-		Listen: c.listen, UIDir: *uiDir, Auth: authm, Records: records, Settings: settings, Docs: docs,
+		Listen: c.listen, UIDir: *uiDir, DataDir: *dataDir, Auth: authm, Records: records, Settings: settings, Docs: docs,
 		PicturesDir: pictures, System: backend, Weather: weather.New(brand + "/" + version + " (novad)"),
 		Name: *name, Version: version, Base: osRelease(), Dev: *dev, Log: logger,
 		ReloadStores: func() { records.Reload(); settings.Reload() },

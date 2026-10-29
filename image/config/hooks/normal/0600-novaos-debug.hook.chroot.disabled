@@ -1,0 +1,20 @@
+#!/bin/sh
+# DEBUG=1 builds only (tools/build-iso.sh enables this hook): a developer account with sudo, a console
+# on tty2 (Ctrl+Alt+F2) and SSH. Never present in release builds.
+set -eu
+if ! id dev >/dev/null 2>&1; then
+  useradd --create-home --shell /bin/bash --groups sudo,adm,systemd-journal --comment "%%NAME%% developer" dev
+fi
+if [ -s /etc/novaos/debug-authorized_keys ]; then
+  install -d -m 0700 -o dev -g dev /home/dev/.ssh
+  install -m 0600 -o dev -g dev /etc/novaos/debug-authorized_keys /home/dev/.ssh/authorized_keys
+  passwd --lock dev
+  echo "I: novaos-debug: SSH key login for 'dev'"
+else
+  echo "dev:%%DEBUG_PASSWORD%%" | chpasswd
+  echo "I: novaos-debug: 'dev' password set (debug build only)"
+fi
+echo 'dev ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/novaos-debug
+chmod 0440 /etc/sudoers.d/novaos-debug
+systemctl unmask getty@.service serial-getty@.service
+systemctl enable getty@tty2.service ssh.service

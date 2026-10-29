@@ -1,0 +1,37 @@
+// %%NAME%%: exactly what the shell may do, and only for the session user while its session is the
+// active local one (it always is: it is the only session on the device). Everything else falls back
+// to the distribution defaults, which require an administrator — and there is none in release builds.
+polkit.addRule(function (action, subject) {
+    if (subject.user !== "%%USER%%" || !subject.local || !subject.active) {
+        return polkit.Result.NOT_HANDLED;
+    }
+    var allowed = [
+        // Power menu
+        "org.freedesktop.login1.power-off",
+        "org.freedesktop.login1.power-off-multiple-sessions",
+        "org.freedesktop.login1.reboot",
+        "org.freedesktop.login1.reboot-multiple-sessions",
+        // Time zone (setting the clock itself stays NTP's job)
+        "org.freedesktop.timedate1.set-timezone",
+        // Wi-Fi (NetworkManager)
+        "org.freedesktop.NetworkManager.enable-disable-wifi",
+        "org.freedesktop.NetworkManager.network-control",
+        "org.freedesktop.NetworkManager.wifi.scan",
+        "org.freedesktop.NetworkManager.settings.modify.system",
+        "org.freedesktop.NetworkManager.settings.modify.own",
+        // USB drives (udisks2): mount, unmount and power off removable drives only
+        "org.freedesktop.udisks2.filesystem-mount",
+        "org.freedesktop.udisks2.eject-media",
+        "org.freedesktop.udisks2.power-off-drive"
+    ];
+    if (allowed.indexOf(action.id) >= 0) {
+        return polkit.Result.YES;
+    }
+    // Storage setup: starting the helper unit for one validated disk name, nothing else.
+    if (action.id === "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("verb") === "start" &&
+        /^novaos-storage-setup@(sd[a-z]{1,2}|vd[a-z]{1,2}|xvd[a-z]{1,2}|nvme[0-9]{1,2}n[0-9]{1,2}|mmcblk[0-9]{1,2})\.service$/.test(action.lookup("unit") || "")) {
+        return polkit.Result.YES;
+    }
+    return polkit.Result.NOT_HANDLED;
+});

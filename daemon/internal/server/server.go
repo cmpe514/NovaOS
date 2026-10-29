@@ -38,6 +38,7 @@ import (
 type Options struct {
 	Listen      string // 127.0.0.1:7171
 	UIDir       string
+	DataDir     string // records.json, settings.json, boots.json
 	Auth        *auth.Manager
 	Records     *store.Records
 	Settings    *store.Settings

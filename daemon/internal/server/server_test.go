@@ -45,7 +45,7 @@ func newEnv(t *testing.T) *env {
 	os.Mkdir(pictures, 0o700)
 	fake := system.NewFake(false, filepath.Join(home, "usb"))
 	h, err := New(Options{
-		Listen: "127.0.0.1:7171", UIDir: ui, Auth: a, Records: store.OpenRecords(data, docs), Settings: store.OpenSettings(data),
+		Listen: "127.0.0.1:7171", UIDir: ui, DataDir: data, Auth: a, Records: store.OpenRecords(data, docs), Settings: store.OpenSettings(data),
 		Docs: docs, PicturesDir: pictures, System: fake, Weather: weather.New("test"), Name: "NovaOS", Version: "test", Dev: true,
 		Log: log.New(io.Discard, "", 0),
 	})

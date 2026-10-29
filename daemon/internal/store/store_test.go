@@ -190,6 +190,15 @@ func TestValidName(t *testing.T) {
 	}
 }
 
+func TestCountBoot(t *testing.T) {
+	dir := t.TempDir()
+	for want := 1; want <= 3; want++ {
+		if got, err := CountBoot(dir); err != nil || got != want {
+			t.Fatalf("boot %d: got %d, %v", want, got, err)
+		}
+	}
+}
+
 func TestSettings(t *testing.T) {
 	dir := t.TempDir()
 	s := OpenSettings(dir)
@@ -208,6 +217,12 @@ func TestSettings(t *testing.T) {
 	}
 	if err := s.SetWeatherPlace(&Place{Name: "Lisbon", Latitude: 38.7, Longitude: -9.1}); err != nil {
 		t.Fatal(err)
+	}
+	if err := s.SetTimezone("Asia/Dubai"); err != nil {
+		t.Fatal(err)
+	}
+	if raw, _ := os.ReadFile(filepath.Join(dir, "settings.json")); !strings.Contains(string(raw), `"system_timezone": "Asia/Dubai"`) {
+		t.Fatalf("mount-data greps settings.json for the time zone; format changed: %s", raw)
 	}
 	again := OpenSettings(dir)
 	if again.UI()["accent"] != "peach" || again.WeatherPlace().Name != "Lisbon" {

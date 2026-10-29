@@ -1,0 +1,19 @@
+# Finds the NOVA-DATA partition and mounts it on /var/lib/novaos before the session starts.
+# Without one, /var/lib/novaos stays on the live system's RAM overlay and the shell says so in Settings.
+[Unit]
+Description=%%NAME%% data partition (NOVA-DATA)
+DefaultDependencies=no
+After=local-fs.target systemd-udev-trigger.service
+Before=novaos-session.service NetworkManager.service bluetooth.service
+Conflicts=shutdown.target
+Before=shutdown.target
+ConditionKernelCommandLine=!novaos.nodata
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/novaos/mount-data
+TimeoutStartSec=45
+
+[Install]
+WantedBy=multi-user.target

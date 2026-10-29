@@ -1,0 +1,36 @@
+# The %%NAME%% graphical session: sway + the shell, as the unprivileged user %%USER%% on tty1.
+# No display manager, no login prompt. pam_systemd registers a real logind session on seat0, so the
+# user gets device access (GPU, input, sound) and polkit treats it as the active local session.
+[Unit]
+Description=%%NAME%% session
+Documentation=file:/usr/share/doc/novaos/README.md
+After=systemd-user-sessions.service novaos-data.service plymouth-start.service plymouth-quit.service getty@tty1.service
+Wants=novaos-data.service
+Conflicts=getty@tty1.service plymouth-quit.service
+OnFailure=plymouth-quit.service
+StartLimitIntervalSec=120
+StartLimitBurst=6
+
+[Service]
+Type=simple
+User=%%USER%%
+PAMName=novaos
+WorkingDirectory=~
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty1
+UtmpMode=user
+# Keep the splash on screen until sway takes over the display.
+ExecStartPre=-+/usr/bin/plymouth quit --retain-splash
+ExecStart=/usr/lib/novaos/session
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=graphical.target
+Alias=display-manager.service

@@ -1,0 +1,8 @@
+#!/bin/sh
+# NetworkManager and BlueZ start after the data partition is mounted, so known Wi-Fi networks and
+# paired devices (kept on NOVA-DATA by novaos-data.service) are there when they start.
+set -eu
+for unit in NetworkManager.service bluetooth.service; do
+  mkdir -p "/etc/systemd/system/$unit.d"
+  printf '[Unit]\nAfter=novaos-data.service\nWants=novaos-data.service\n' > "/etc/systemd/system/$unit.d/novaos-data.conf"
+done

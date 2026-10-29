@@ -16,7 +16,8 @@
   const req=(method,path,body)=>novaApi.request(method,path,body);
   function message(text){if(window.novaApp)window.novaApp.message(text);else console.warn(text)}
   function text(id,value){const el=$(id);if(el&&el.textContent!==value)el.textContent=value}
-  function show(id,visible){const el=$(id);if(el)el.hidden=!visible}
+  // Uses the attribute, not .hidden: the status icons are SVG elements, which have no .hidden property.
+  function show(id,visible){const el=$(id);if(el)el.toggleAttribute('hidden',!visible)}
   function el(tag,className,content){const node=document.createElement(tag);if(className)node.className=className;if(content!==undefined)node.textContent=content;return node}
   function button(label,className,onClick){const b=el('button',className||'small-action',label);b.type='button';b.addEventListener('click',onClick);return b}
   function bytes(n){if(!Number.isFinite(n))return '';const u=['B','KB','MB','GB','TB'];let i=0;while(n>=1000&&i<u.length-1){n/=1000;i++}return (i?n.toFixed(n<10?1:0):n)+' '+u[i]}
@@ -36,7 +37,7 @@
     if(old.getAttribute('data-lucide')===name&&old.getAttribute('aria-label')===label)return;
     const holder=document.createElement('div'),icon=document.createElement('i');
     icon.id=id;icon.setAttribute('data-lucide',name);icon.setAttribute('role','img');icon.setAttribute('aria-label',label);
-    icon.hidden=old.hidden;if(old.style.cssText)icon.setAttribute('style',old.style.cssText);
+    icon.toggleAttribute('hidden',old.hasAttribute('hidden'));if(old.style.cssText)icon.setAttribute('style',old.style.cssText);
     holder.appendChild(icon);lucide.createIcons({root:holder});
     old.replaceWith(holder.firstElementChild);
   }
@@ -61,9 +62,10 @@
   }
   function applyToDevice(state,changed){
     if(mode!=='device'||!status)return;
-    if(changed.has('wifi')&&status.wifi)act('/api/wifi',{enabled:state.wifi},'Wi-Fi could not be switched');
-    if(changed.has('bluetooth')&&status.bluetooth)act('/api/bluetooth',{enabled:state.bluetooth},'Bluetooth could not be switched');
-    if(changed.has('quiet')&&status.audio)act('/api/audio',{muted:state.quiet},'Sound could not be changed');
+    // Radio and sound changes are reflected in the status bar right away, not at the next poll.
+    if(changed.has('wifi')&&status.wifi)act('/api/wifi',{enabled:state.wifi},'Wi-Fi could not be switched').then(refreshStatus);
+    if(changed.has('bluetooth')&&status.bluetooth)act('/api/bluetooth',{enabled:state.bluetooth},'Bluetooth could not be switched').then(refreshStatus);
+    if(changed.has('quiet')&&status.audio)act('/api/audio',{muted:state.quiet},'Sound could not be changed').then(refreshStatus);
     if(changed.has('brightness')&&status.backlight){
       clearTimeout(backlightTimer);
       backlightTimer=setTimeout(()=>act('/api/backlight',{percent:backlightPercent(state.brightness)},'Brightness could not be changed'),120);

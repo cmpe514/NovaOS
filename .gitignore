@@ -10,3 +10,4 @@ out/
 *.iso
 *.qcow2
 .dev-data/
+tests/.novad/

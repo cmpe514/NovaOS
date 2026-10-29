@@ -16,7 +16,9 @@ export default defineConfig({
   workers:process.env.CI?2:undefined,
   reporter:[['list'],['html',{open:'never',outputFolder:'report'}]],
   outputDir:'results',
-  use:{locale:'en-US',timezoneId:'UTC',trace:'retain-on-failure',screenshot:'only-on-failure'},
+  use:{locale:'en-US',timezoneId:'UTC',trace:'retain-on-failure',screenshot:'only-on-failure',
+    // NOVA_CHROMIUM=/usr/bin/chromium uses the distro browser (the builder container does this).
+    launchOptions:process.env.NOVA_CHROMIUM?{executablePath:process.env.NOVA_CHROMIUM}:{}},
   projects:[
     {name:'preview',testIgnore:/device\.spec\.js/,use:{baseURL:`http://127.0.0.1:${PREVIEW_PORT}`}},
     {name:'device',testMatch:/device\.spec\.js/,use:{baseURL:`http://127.0.0.1:${DEVICE_PORT}`}},

@@ -1,6 +1,7 @@
 /* 8259A interrupt controllers (remapped to vectors 32-47) and the 8254 timer (IRQ 0). */
 #include "kernel.h"
-volatile uint64_t ticks;
+void pic_unmask(int irq);
+
 void pic_init(void) {
     outb(0x20, 0x11); io_wait(); outb(0xa0, 0x11); io_wait();
     outb(0x21, 32); io_wait(); outb(0xa1, 40); io_wait();

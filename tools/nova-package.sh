@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Packages the built images with checksums and a build manifest: out/novaos-<version>-<target>.tar.gz
 set -euo pipefail
-version=$1 target=$2
+version=$1 target=$2; shift 2   # remaining arguments: the image files to include
 cd "$(dirname "$0")/.."
+arch=${target#qemu-}
 name=novaos-$version-$target
 stage=build/package/$name
 rm -rf "$stage" && mkdir -p "$stage"
-cp "out/$name.iso" "out/$name-recovery-default.iso" build/x86_64/novaos.elf "$stage/"
+cp "$@" "build/$arch/novaos.elf" "$stage/"
 cp THIRD_PARTY_LICENSES "$stage/" 2>/dev/null || true
 {
     echo "NovaOS $version ($target)"
@@ -15,7 +16,7 @@ cp THIRD_PARTY_LICENSES "$stage/" 2>/dev/null || true
     echo "toolchain:"
     for t in clang ld.lld grub-mkrescue xorriso; do echo "  $t: $($t --version 2>&1 | head -1)"; done
     echo "sha256:"
-    (cd "$stage" && sha256sum -- *.iso novaos.elf | sed 's/^/  /')
+    (cd "$stage" && for f in *; do case $f in MANIFEST.txt|THIRD_PARTY_LICENSES) ;; *) sha256sum -- "$f" ;; esac; done | sed "s/^/  /")
 } > "$stage/MANIFEST.txt"
 tar -C build/package -czf "out/$name.tar.gz" "$name"
 cp "$stage/MANIFEST.txt" "out/MANIFEST-$name.txt"

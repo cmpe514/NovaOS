@@ -41,9 +41,7 @@ int task_spawn(const char *name, uint32_t caps, uint64_t arg, int parent) {
     *t = (task_t){ .pid = next_pid++, .parent = parent, .state = T_RUN, .caps = caps, .pml4 = pml4, .kstack = kstack };
     for (int i = 0; i < 15 && name[i]; i++) t->name[i] = name[i];
     frame_t *f = (frame_t *)(kstack - sizeof(frame_t));
-    memset(f, 0, sizeof *f);
-    f->rip = entry; f->cs = UCODE_SEL; f->rflags = 0x202; f->rsp = USER_STACK_TOP - 8; f->ss = UDATA_SEL;
-    f->rdi = arg;
+    arch_user_frame(f, entry, USER_STACK_TOP - 16, arg);
     t->frame = f;
     kprintf("spawn: pid %d '%s' caps=%x\n", t->pid, t->name, caps);
     return t->pid;
@@ -51,8 +49,7 @@ int task_spawn(const char *name, uint32_t caps, uint64_t arg, int parent) {
 
 static void switch_to(task_t *t) {
     current = t;
-    if (t->pid) cpu_set_kernel_stack(t->kstack);
-    __asm__ volatile("mov %0, %%cr3" :: "r"(t->pml4) : "memory");
+    arch_switch_to(t->pml4, t->pid ? t->kstack : 0);
 }
 
 frame_t *schedule(frame_t *f) {

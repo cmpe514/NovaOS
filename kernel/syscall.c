@@ -40,18 +40,17 @@ static uint64_t sys_sysinfo(uint64_t u) {
     nova_sysinfo *s = (nova_sysinfo *)u;
     memset(s, 0, sizeof *s);
     s->mem_total = pmm_total() * PAGE; s->mem_free = pmm_free_count() * PAGE;
-    s->ticks = ticks; s->hz = TICK_HZ; s->tasks = task_count(); s->pci_devices = pci_count;
+    s->ticks = ticks; s->hz = TICK_HZ; s->tasks = task_count(); s->pci_devices = device_count;
     s->boot_mode = boot_mode; s->kbd_ok = kbd_ok; s->fb_width = fb.width; s->fb_height = fb.height;
     memcpy(s->version, NOVA_VERSION, sizeof NOVA_VERSION);
-    uint32_t r[12];
-    for (int i = 0; i < 3; i++) cpuid(0x80000002 + i, &r[i * 4], &r[i * 4 + 1], &r[i * 4 + 2], &r[i * 4 + 3]);
-    memcpy(s->cpu, r, 47);
+    memcpy(s->arch, arch_name, strlen(arch_name) + 1);
+    arch_cpu_name(s->cpu, sizeof s->cpu);
     return 0;
 }
 
-uint64_t syscall_dispatch(frame_t *f, bool *resched) {
-    uint64_t a = f->rdi, b = f->rsi, c = f->rdx;
-    switch (f->rax) {
+uint64_t syscall_dispatch(frame_t *f, bool *resched, bool *restart) {
+    uint64_t a = SYSCALL_ARG0(f), b = SYSCALL_ARG1(f), c = SYSCALL_ARG2(f);
+    switch (SYSCALL_NR(f)) {
     case SYS_WRITE:
         if (b > 4096) return ERR(E_INVAL);
         CHECK(a, b, false);
@@ -62,7 +61,7 @@ uint64_t syscall_dispatch(frame_t *f, bool *resched) {
     case SYS_WAIT: {
         bool block = false;
         int64_t r = task_wait((int)a, &block);
-        if (block) { f->rip -= 2; *resched = true; return SYS_WAIT; }   /* re-execute `int $0x80` when woken */
+        if (block) { *restart = *resched = true; return 0; }   /* re-execute the syscall when woken */
         return (uint64_t)r;
     }
     case SYS_FB_MAP: return sys_fb_map(a);
@@ -70,7 +69,7 @@ uint64_t syscall_dispatch(frame_t *f, bool *resched) {
         NEED(CAP_INPUT);
         if (b == 0 || b > 64) return ERR(E_INVAL);
         CHECK(a, b * sizeof(nova_input_event), true);
-        return (uint64_t)kbd_read((nova_input_event *)a, (int)b);
+        return (uint64_t)input_read((nova_input_event *)a, (int)b);
     case SYS_TIME: CHECK(a, sizeof(nova_time), true); rtc_read((nova_time *)a); return 0;
     case SYS_TICKS: return ticks * 1000 / TICK_HZ;
     case SYS_SLEEP:

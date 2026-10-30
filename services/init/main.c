@@ -16,19 +16,19 @@ int main(uint64_t boot_mode) {
     puts_("NOVA_USERSPACE_READY init\n");
     /* syscall validation */
     check("invalid_syscall_enosys", sc3(999, 0, 0, 0) == -E_NOSYS);
-    check("write_kernel_pointer_efault", sys_write((const char *)0x100000, 16) == -E_FAULT);
-    check("write_unmapped_pointer_efault", sys_write((const char *)0x50000000, 16) == -E_FAULT);
-    check("write_oversized_einval", sys_write((const char *)0x7fffffff, 0xffffffffffffff00ull) == -E_INVAL);
+    check("write_kernel_pointer_efault", sys_write((const char *)PROBE_KERNEL_ADDR, 16) == -E_FAULT);
+    check("write_unmapped_pointer_efault", sys_write((const char *)(USER_BASE + 0x10000000), 16) == -E_FAULT);
+    check("write_oversized_einval", sys_write((const char *)(USER_TOP - 1), 0xffffffffffffff00ull) == -E_INVAL);
     check("sysinfo_into_readonly_efault", sys_sysinfo((nova_sysinfo *)(uintptr_t)&check) == -E_FAULT);
     check("spawn_unknown_enoent", sys_spawn("nope", 0, 0) == -E_NOENT);
     /* memory protection and privilege separation (each probe runs in its own address space) */
-    check("user_read_kernel_memory_killed", run_probe(1, 0) == (EXIT_FAULT | 14));
-    check("user_write_own_code_killed", run_probe(2, 0) == (EXIT_FAULT | 14));
-    check("user_privileged_instruction_killed", run_probe(3, 0) == (EXIT_FAULT | 13));
-    check("user_port_io_killed", run_probe(4, 0) == (EXIT_FAULT | 13));
+    check("user_read_kernel_memory_killed", run_probe(1, 0) == (EXIT_FAULT | FAULT_PAGE));
+    check("user_write_own_code_killed", run_probe(2, 0) == (EXIT_FAULT | FAULT_PAGE));
+    check("user_privileged_instruction_killed", run_probe(3, 0) == (EXIT_FAULT | FAULT_PRIV));
+    check("user_port_io_killed", run_probe(4, 0) == (EXIT_FAULT | FAULT_PRIV));
     check("capability_fb_denied", run_probe(5, 0) == 0);
     check("capability_escalation_denied", run_probe(6, CAP_SPAWN) == 0);
-    check("user_execute_stack_killed", run_probe(7, 0) == (EXIT_FAULT | 14));
+    check("user_execute_stack_killed", run_probe(7, 0) == (EXIT_FAULT | FAULT_PAGE));
     check("kernel_survives_and_reaps", run_probe(0, 0) == 42);
     puts_(fails ? "NOVA_SELFTEST_DONE FAIL\n" : "NOVA_SELFTEST_DONE PASS\n");
 

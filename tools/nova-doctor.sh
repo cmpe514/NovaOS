@@ -14,6 +14,7 @@ need grub-mkrescue grub-common
 need xorriso xorriso
 need mformat mtools
 need qemu-system-x86_64 qemu-system-x86
+need qemu-system-aarch64 qemu-system-arm
 need python3 python3
 [ -d /usr/lib/grub/i386-pc ] && echo "  ok       GRUB BIOS modules" || { echo "  MISSING  GRUB BIOS modules (grub-pc-bin)"; ok=0; }
 [ -d /usr/lib/grub/x86_64-efi ] && echo "  ok       GRUB UEFI modules" || { echo "  MISSING  GRUB UEFI modules (grub-efi-amd64-bin)"; ok=0; }

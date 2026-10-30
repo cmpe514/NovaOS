@@ -47,10 +47,10 @@ static void vkprintf(const char *f, va_list ap) {
 void kprintf(const char *fmt, ...) { va_list ap; va_start(ap, fmt); vkprintf(fmt, ap); va_end(ap); }
 
 void panic(const char *fmt, ...) {
-    __asm__ volatile("cli");
+    irq_disable();
     kprintf("\nNOVA_PANIC: ");
     va_list ap; va_start(ap, fmt); vkprintf(fmt, ap); va_end(ap);
     kprintf("\n");
     fb_panic_screen("The kernel stopped because of an internal error. Details were written to the serial log.");
-    for (;;) __asm__ volatile("hlt");
+    for (;;) cpu_wait();
 }

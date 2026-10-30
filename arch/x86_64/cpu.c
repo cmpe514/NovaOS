@@ -1,6 +1,7 @@
 /* GDT, TSS and IDT for x86-64. */
 #include <stdint.h>
 #include "kernel.h"
+#define KCODE_SEL 0x08
 
 struct tss { uint32_t r0; uint64_t rsp0, rsp1, rsp2, r1, ist[7], r2; uint16_t r3, iomap; } __attribute__((packed));
 struct idt_entry { uint16_t off0, sel; uint8_t ist, attr; uint16_t off1; uint32_t off2, zero; } __attribute__((packed));

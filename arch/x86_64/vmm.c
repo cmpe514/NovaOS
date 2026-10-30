@@ -1,4 +1,4 @@
-/* Address spaces. Every process gets its own PML4. The kernel's identity map of 0-1 GiB and 2-4 GiB is shared
+/* x86-64 address spaces. Every process gets its own PML4. The kernel's identity map of 0-1 GiB and 2-4 GiB is shared
  * as supervisor-only (no U bit), so ring 3 cannot touch it; 1-2 GiB is the private user region. */
 #include "kernel.h"
 

@@ -10,7 +10,7 @@ uint64_t elf_load(uint64_t pml4, const uint8_t *img, uint64_t size) {
     if (size < sizeof(ehdr_t)) return 0;
     const ehdr_t *eh = (const ehdr_t *)img;
     if (memcmp(eh->ident, "\x7f" "ELF", 4) || eh->ident[4] != 2 || eh->ident[5] != 1 || eh->type != 2 ||
-        eh->machine != 62 || eh->phentsize != sizeof(phdr_t) || eh->phnum > 16 ||
+        eh->machine != elf_machine || eh->phentsize != sizeof(phdr_t) || eh->phnum > 16 ||
         eh->phoff > size || eh->phnum * sizeof(phdr_t) > size - eh->phoff)
         return 0;
     if (eh->entry < USER_BASE || eh->entry >= USER_FB) return 0;

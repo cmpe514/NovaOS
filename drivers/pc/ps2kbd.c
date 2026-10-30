@@ -1,16 +1,8 @@
-/* PS/2 keyboard through the i8042 controller: scancode set 1 (controller translation on), IRQ 1. */
+/* PS/2 keyboard through the i8042 controller: scancode set 1 (controller translation on), IRQ 1.
+ * Scancodes are translated to Linux key codes for kernel/input.c. */
 #include "kernel.h"
-bool kbd_ok;
-static nova_input_event q[64];
-static volatile unsigned qh, qt;
-static bool shift, ext;
-
-static const char map[0x3a] = { 0, 27, '1','2','3','4','5','6','7','8','9','0','-','=','\b','\t','q','w','e','r','t','y',
-    'u','i','o','p','[',']','\n', 0, 'a','s','d','f','g','h','j','k','l',';','\'','`', 0,'\\','z','x','c','v','b','n','m',
-    ',','.','/', 0, '*', 0, ' ' };
-static const char smap[0x3a] = { 0, 27, '!','@','#','$','%','^','&','*','(',')','_','+','\b','\t','Q','W','E','R','T','Y',
-    'U','I','O','P','{','}','\n', 0, 'A','S','D','F','G','H','J','K','L',':','"','~', 0,'|','Z','X','C','V','B','N','M',
-    '<','>','?', 0, '*', 0, ' ' };
+static bool ext;
+void pic_unmask(int irq);
 
 static bool wait_in(void) { for (int i = 0; i < 100000; i++) if (!(inb(0x64) & 2)) return true; return false; }
 static bool wait_out(void) { for (int i = 0; i < 100000; i++) if (inb(0x64) & 1) return true; return false; }
@@ -34,14 +26,9 @@ bool kbd_init(void) {
     return true;
 }
 
-static void push(uint16_t key, bool pressed) {
-    unsigned n = (qh + 1) % 64;
-    if (n == qt) return;                                      /* queue full: drop */
-    q[qh] = (nova_input_event){ key, pressed, shift };
-    qh = n;
-}
-
 void kbd_irq(void) {
+    static const uint8_t ext_map[][2] = { { 0x48, 103 }, { 0x50, 108 }, { 0x4b, 105 }, { 0x4d, 106 }, { 0x47, 102 },
+                                          { 0x4f, 107 }, { 0x53, 111 }, { 0x1c, 96 }, { 0x5b, 125 }, { 0x5c, 126 } };
     while (inb(0x64) & 1) {
         uint8_t sc = inb(0x60);
         if (sc == 0xe0) { ext = true; continue; }
@@ -49,23 +36,10 @@ void kbd_irq(void) {
         uint8_t code = sc & 0x7f;
         if (ext) {
             ext = false;
-            uint16_t k = code == 0x48 ? KEY_UP : code == 0x50 ? KEY_DOWN : code == 0x4b ? KEY_LEFT :
-                         code == 0x4d ? KEY_RIGHT : code == 0x47 ? KEY_HOME : code == 0x4f ? KEY_END :
-                         code == 0x53 ? KEY_DELETE : code == 0x1c ? '\n' : (code == 0x5b || code == 0x5c) ? KEY_SUPER : 0;
-            if (k) push(k, pressed);
+            for (unsigned i = 0; i < sizeof ext_map / sizeof *ext_map; i++)
+                if (ext_map[i][0] == code) input_key(ext_map[i][1], pressed);
             continue;
         }
-        if (code == 0x2a || code == 0x36) { shift = pressed; continue; }
-        if (code == 0x3b) { push(KEY_F1, pressed); continue; }
-        if (code == 0x3c) { push(KEY_F2, pressed); continue; }
-        if (code < sizeof map && map[code]) push((uint8_t)(shift ? smap[code] : map[code]), pressed);
+        input_key(code, pressed);   /* set-1 codes below 0x59 equal Linux key codes */
     }
-}
-
-int kbd_read(nova_input_event *ev, int max) {
-    int n = 0;
-    __asm__ volatile("cli");
-    while (n < max && qt != qh) { ev[n++] = q[qt]; qt = (qt + 1) % 64; }
-    __asm__ volatile("sti");
-    return n;
 }

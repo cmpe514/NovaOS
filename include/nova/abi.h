@@ -2,7 +2,8 @@
 #pragma once
 #include <stdint.h>
 
-/* Calling convention: `int $0x80`, number in rax, arguments in rdi, rsi, rdx; result in rax.
+/* Calling convention: x86-64 `int $0x80`, number in rax, arguments in rdi, rsi, rdx, result in rax.
+ * AArch64 `svc #0`, number in x8, arguments in x0, x1, x2, result in x0.
  * Negative results are errors. Every pointer argument is checked against the caller's page tables. */
 enum {
     SYS_EXIT = 0, SYS_WRITE, SYS_YIELD, SYS_SPAWN, SYS_WAIT, SYS_FB_MAP, SYS_INPUT_READ,
@@ -24,13 +25,22 @@ enum {
 #define CAP_POWER    (1u << 3)   /* reboot / power off */
 #define CAP_ALL      0xfu
 
-/* A process killed by a CPU exception exits with EXIT_FAULT | vector. */
+/* A process killed by a CPU exception exits with EXIT_FAULT | kind (x86 vector numbers; AArch64 maps to them). */
 #define EXIT_FAULT 0x100
+#define FAULT_PAGE 14    /* access to unmapped or forbidden memory, NX / permission violation */
+#define FAULT_PRIV 13    /* privileged or forbidden instruction */
 
-#define USER_BASE      0x40000000ull   /* 1 GiB: program images are linked here */
-#define USER_FB        0x60000000ull   /* framebuffer mapping (CAP_DISPLAY) */
-#define USER_STACK_TOP 0x7fff0000ull
-#define USER_TOP       0x80000000ull
+/* The 1 GiB private user region. Program images are linked at USER_BASE. */
+#if defined(__aarch64__)
+#define USER_BASE      0x8000000000ull   /* 512 GiB (TTBR0, L0 entry 1); RAM sits at 1-2 GiB on QEMU virt */
+#define PROBE_KERNEL_ADDR 0x40200000ull  /* kernel image, EL1-only */
+#else
+#define USER_BASE      0x40000000ull     /* 1 GiB */
+#define PROBE_KERNEL_ADDR 0x100000ull    /* kernel image, supervisor-only */
+#endif
+#define USER_FB        (USER_BASE + 0x20000000ull)   /* framebuffer mapping (CAP_DISPLAY) */
+#define USER_STACK_TOP (USER_BASE + 0x3fff0000ull)
+#define USER_TOP       (USER_BASE + 0x40000000ull)
 
 typedef struct { uint64_t addr; uint32_t width, height, pitch, bpp; } nova_fb_info;
 
@@ -57,5 +67,6 @@ typedef struct {
     uint32_t tasks, pci_devices, boot_mode, kbd_ok;
     uint32_t fb_width, fb_height;
     char version[16];
+    char arch[16];
     char cpu[48];
 } nova_sysinfo;

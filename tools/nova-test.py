@@ -4,7 +4,9 @@
 Checks serial markers AND screen contents (screendumps compared with committed golden images), and drives
 the UI with real PS/2 key events. Results are written to OUT/results.json and OUT/*.png.
 
-  tools/nova-test.py --iso out/novaos-...iso --recovery-iso out/...-recovery-default.iso --out out/test [--update-golden]
+  tools/nova-test.py --arch x86_64 --iso out/novaos-...iso --recovery-iso out/...-recovery-default.iso --out DIR
+  tools/nova-test.py --arch aarch64 --kernel out/novaos-...-qemu-aarch64.elf --out DIR
+Both architectures are compared with the same golden screenshots (tests/golden/).
 """
 import argparse, json, os, socket, subprocess, sys, tempfile, time
 
@@ -17,18 +19,15 @@ RTC = "2026-10-29T17:39:00"   # fixed clock so screenshots are comparable
 
 
 class VM:
-    def __init__(self, iso, out, name, uefi=False):
+    def __init__(self, machine, out, name):
+        """machine: QEMU arguments selecting the system and boot medium (see main)."""
         self.name, self.out = name, out
         self.dir = tempfile.mkdtemp(prefix="nova-")
         self.serial = os.path.join(out, f"{name}.serial.log")
         self.qmp_path = os.path.join(self.dir, "qmp.sock")
-        cmd = ["qemu-system-x86_64", "-m", "512", "-device", "VGA", "-display", "none", "-no-reboot",
-               "-rtc", f"base={RTC},clock=vm", "-serial", f"file:{self.serial}",
-               "-qmp", f"unix:{self.qmp_path},server=on,wait=off", "-cdrom", iso]
-        if uefi:
-            cmd[1:1] = ["-bios", OVMF]
-        if os.path.exists("/dev/kvm") and os.access("/dev/kvm", os.W_OK):
-            cmd.append("-enable-kvm")
+        cmd = machine + ["-m", "512", "-display", "none", "-no-reboot",
+                         "-rtc", f"base={RTC},clock=vm", "-serial", f"file:{self.serial}",
+                         "-qmp", f"unix:{self.qmp_path},server=on,wait=off"]
         self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
         for _ in range(100):
             if os.path.exists(self.qmp_path):
@@ -114,20 +113,32 @@ def compare(png, golden_name, update):
     if a.size != b.size:
         return {"golden": golden_name, "status": "size-mismatch", "size": a.size, "golden_size": b.size}
     diff = ImageChops.difference(a, b).convert("L")
-    changed = sum(1 for p in diff.getdata() if p > 24)
+    pixels = diff.get_flattened_data() if hasattr(diff, "get_flattened_data") else diff.getdata()
+    changed = sum(1 for p in pixels if p > 24)
     ratio = changed / (a.size[0] * a.size[1])
     return {"golden": golden_name, "status": "ok" if ratio < 0.01 else "different", "changed_ratio": round(ratio, 5)}
 
 
 def main():
+    os.environ.setdefault("PYTHONWARNINGS", "ignore")
     ap = argparse.ArgumentParser()
-    ap.add_argument("--iso", required=True)
-    ap.add_argument("--recovery-iso", required=True)
+    ap.add_argument("--arch", choices=["x86_64", "aarch64"], default="x86_64")
+    ap.add_argument("--iso")
+    ap.add_argument("--recovery-iso")
+    ap.add_argument("--kernel")
     ap.add_argument("--out", required=True)
     ap.add_argument("--update-golden", action="store_true")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     results = []
+    if a.arch == "x86_64":
+        kvm = ["-enable-kvm"] if os.access("/dev/kvm", os.W_OK) else []
+        pc = ["qemu-system-x86_64", "-device", "VGA"] + kvm
+        normal, recovery, uefi = pc + ["-cdrom", a.iso], pc + ["-cdrom", a.recovery_iso], pc + ["-bios", OVMF, "-cdrom", a.iso]
+    else:
+        virt = ["qemu-system-aarch64", "-M", "virt", "-cpu", "cortex-a72", "-device", "ramfb",
+                "-device", "virtio-keyboard-device", "-global", "virtio-mmio.force-legacy=false", "-kernel", a.kernel]
+        normal, recovery, uefi = virt, virt + ["-fw_cfg", "name=opt/nova/cmdline,string=nova.recovery"], None
 
     def check(name, ok, evidence=""):
         results.append({"test": name, "result": "PASS" if ok else "FAIL", "evidence": evidence})
@@ -142,18 +153,18 @@ def main():
               f"{os.path.basename(png)} {size[0]}x{size[1]} {distinct} grey levels, {c}")
 
     # 1. BIOS boot to the shell, self-tests, UI interaction, power off.
-    vm = VM(a.iso, a.out, "bios")
+    vm = VM(normal, a.out, "boot")
     try:
-        check("bios: kernel ready", vm.wait("NOVA_KERNEL_READY", 120))
-        check("bios: userspace ready", vm.wait("NOVA_USERSPACE_READY"))
+        check("boot: kernel ready", vm.wait("NOVA_KERNEL_READY", 120))
+        check("boot: userspace ready", vm.wait("NOVA_USERSPACE_READY"))
         ok = vm.wait("NOVA_SELFTEST_DONE")
         log = vm.log()
         for line in log.splitlines():
             if line.startswith("NOVA_SELFTEST "):
                 _, name, res = line.split()
                 check("selftest: " + name, res == "PASS", "kernel serial log")
-        check("bios: all self-tests passed", ok and "NOVA_SELFTEST_DONE PASS" in log)
-        check("bios: shell ready", vm.wait("NOVA_SHELL_READY"))
+        check("boot: all self-tests passed", ok and "NOVA_SELFTEST_DONE PASS" in log)
+        check("boot: shell ready", vm.wait("NOVA_SHELL_READY"))
         time.sleep(1)
         visual(vm, "home", "home.png")
 
@@ -184,7 +195,7 @@ def main():
         check("ui: Quick settings opens Settings", vm.wait("NOVA_SHELL_VIEW settings", 20, n))
         time.sleep(0.5)
         png = vm.shot("settings")
-        check("bios: settings screenshot captured", screen_stats(png)[1] > 32, os.path.basename(png))
+        check("boot: settings screenshot captured", screen_stats(png)[1] > 32, os.path.basename(png))
         vm.keys("right", "ret")
         check("power: Shut down from Settings powers off", vm.wait("NOVA_POWER_OFF", 20, n))
         try:
@@ -196,7 +207,7 @@ def main():
         vm.close()
 
     # 2. Recovery boot entry (independent program, same theme), and "Boot normal system".
-    vm = VM(a.recovery_iso, a.out, "recovery")
+    vm = VM(recovery, a.out, "recovery")
     try:
         check("recovery: kernel ready in recovery mode", vm.wait("NOVA_KERNEL_READY", 120) and "mode=1" in vm.log())
         check("recovery: self-tests pass", vm.wait("NOVA_SELFTEST_DONE PASS"))
@@ -211,8 +222,8 @@ def main():
         vm.close()
 
     # 3. UEFI boot of the same ISO.
-    if os.path.exists(OVMF):
-        vm = VM(a.iso, a.out, "uefi", uefi=True)
+    if uefi and os.path.exists(OVMF):
+        vm = VM(uefi, a.out, "uefi")
         try:
             check("uefi: kernel ready", vm.wait("NOVA_KERNEL_READY", 180))
             check("uefi: self-tests pass", vm.wait("NOVA_SELFTEST_DONE PASS"))
@@ -223,7 +234,7 @@ def main():
             check("uefi: home screen rendered", distinct > 32, f"{size[0]}x{size[1]}, {distinct} grey levels")
         finally:
             vm.close()
-    else:
+    elif uefi:
         check("uefi: OVMF firmware present", False, f"{OVMF} missing; install ovmf")
 
     with open(os.path.join(a.out, "results.json"), "w") as fh:

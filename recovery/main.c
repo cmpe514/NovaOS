@@ -47,11 +47,11 @@ static void draw(void) {
             nova_sysinfo si; sys_sysinfo(&si);
             char b[96];
             gfx_text(&ui.back, &font_h2, dx, dy, "System information", C_TEXT, 0); dy += 40;
-            b[0] = 0; str_cat(b, "NovaOS kernel "); str_cat(b, si.version); gfx_text(&ui.back, &font_body, dx, dy, b, C_SOFT, 0); dy += 28;
+            b[0] = 0; str_cat(b, "NovaOS kernel "); str_cat(b, si.version); str_cat(b, " "); str_cat(b, si.arch); gfx_text(&ui.back, &font_body, dx, dy, b, C_SOFT, 0); dy += 28;
             gfx_text(&ui.back, &font_body, dx, dy, si.cpu, C_SOFT, 0); dy += 28;
             b[0] = 0; fmt_u(b, si.mem_free >> 20, 1); str_cat(b, " MiB free of "); fmt_u(b + strlen(b), si.mem_total >> 20, 1); str_cat(b, " MiB");
             gfx_text(&ui.back, &font_body, dx, dy, b, C_SOFT, 0); dy += 28;
-            b[0] = 0; fmt_u(b, si.pci_devices, 1); str_cat(b, " PCI devices, keyboard "); str_cat(b, si.kbd_ok ? "OK" : "missing");
+            b[0] = 0; fmt_u(b, si.pci_devices, 1); str_cat(b, " devices, keyboard "); str_cat(b, si.kbd_ok ? "OK" : "missing");
             gfx_text(&ui.back, &font_body, dx, dy, b, C_SOFT, 0); dy += 28;
             gfx_text(&ui.back, &font_body, dx, dy, "Storage and network drivers: not implemented yet", 0xf6a9a4, 0);
         } else {

@@ -22,7 +22,14 @@ QEMU's virtual hardware), **experimental**, **unsupported**, **blocked**.
 | Audio (virtio-snd / HDA) | qemu-x86_64 | — | — | — | unsupported | after M4 |
 | Power off / reboot | qemu-x86_64 | fixed QEMU PM1a port 0x604, i8042 reset | — | "Shut down" in Settings exits QEMU (`make test`) | emulated | real hardware needs an ACPI (AML) interpreter |
 | Battery | any | — | ACPI / PMIC | — | unsupported | Settings says "Not supported yet" |
-| Everything ARM64 (GIC, generic timer, PL011, virtio-mmio) | qemu-aarch64 | — | — | — | unsupported | M5 |
+| PL011 UART | qemu-aarch64 | `drivers/virt/pl011.c`, polled TX | — | all serial markers in `make test ARCH=aarch64` | implemented | — |
+| GICv2 | qemu-aarch64 | `drivers/virt/gic_timer.c` | — | timer and virtio IRQs delivered | emulated | GICv3 not supported yet |
+| ARM generic timer (virtual, PPI 27) | qemu-aarch64 | `drivers/virt/gic_timer.c`, 250 Hz | GIC | preemption, sleep, uptime | implemented | — |
+| Exceptions / MMU | qemu-aarch64 | `arch/aarch64/vectors.S`, `vmm.c`, 4 KiB granule | — | the same 14 protection self-tests pass (EL0 faults kill only the process) | implemented | no ASIDs, no PAN yet |
+| fw_cfg + ramfb display | qemu-aarch64 | `drivers/virt/fw_cfg_ramfb.c` | fw_cfg DMA | 1280×800 screenshots identical to x86-64 | emulated | virtio-gpu not done |
+| virtio-mmio transport (modern v2) + virtio-input keyboard | qemu-aarch64 | `drivers/virt/virtio_input.c` | GIC | QMP key events drive the shell (`make test ARCH=aarch64`) | implemented | legacy (v1) transport unsupported; needs `-global virtio-mmio.force-legacy=false`; no pointer device yet |
+| PL031 RTC | qemu-aarch64 | `drivers/virt/rtc_psci.c` | — | clock shows `-rtc base=` time | implemented | — |
+| PSCI power off / reset | qemu-aarch64 | HVC conduit | — | "Shut down" exits QEMU | emulated | conduit is fixed to HVC (no DTB parsing) |
 | Phone: display, touch, UFS, USB, PMIC, charger | Nothing Phone (3a) Lite | — | see PHONE_PORT.md | — | blocked | no verified boot path or hardware docs |
 | Phone: Wi-Fi, Bluetooth, LTE/5G modem | Nothing Phone (3a) Lite | — | vendor firmware, modem interface | — | blocked | see PHONE_PORT.md; virtio-net does **not** count as Wi-Fi or 4G |
 

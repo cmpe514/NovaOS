@@ -21,7 +21,7 @@ void rtc_read(nova_time *t) {
     t->weekday = (yy + yy / 4 - yy / 100 + yy / 400 + k[(t->month - 1) % 12] + t->day) % 7;
 }
 
-int pci_count;
+static int pci_count;
 static uint32_t pci_read(int bus, int dev, int fn, int off) {
     outl(0xcf8, 0x80000000u | bus << 16 | dev << 11 | fn << 8 | (off & 0xfc));
     return inl(0xcfc);
@@ -42,14 +42,14 @@ int pci_scan(void) {
 
 /* No ACPI interpreter yet: these use the fixed ports of QEMU's PIIX4/ICH9 power management (S5 via PM1a_CNT
  * at 0x604) and the i8042 reset line. They are QEMU-specific and labelled as such in docs/DRIVERS.md. */
-void power_off(void) {
+__attribute__((noreturn)) void power_off(void) {
     kprintf("NOVA_POWER_OFF\n");
     __asm__ volatile("cli");
     outw(0x604, 0x2000);
     outw(0xb004, 0x2000);
     for (;;) __asm__ volatile("hlt");
 }
-void power_reboot(void) {
+__attribute__((noreturn)) void power_reboot(void) {
     kprintf("NOVA_REBOOT\n");
     __asm__ volatile("cli");
     for (int i = 0; i < 100000 && (inb(0x64) & 2); i++) {}

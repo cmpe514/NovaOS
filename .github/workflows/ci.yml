@@ -10,9 +10,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  qemu-x86_64:
+  qemu:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x86_64, aarch64]
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    env:
+      ARCH: ${{ matrix.arch }}
     steps:
       - uses: actions/checkout@v4
       - name: Install the pinned toolchain
@@ -21,7 +27,7 @@ jobs:
         run: make doctor
       - name: make image
         run: make image
-      - name: make test (QEMU, BIOS + UEFI + recovery)
+      - name: make test (QEMU: boot, UI, recovery; x86_64 also UEFI)
         run: |
           if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
           make test
@@ -30,10 +36,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: novaos-qemu-x86_64
+          name: novaos-qemu-${{ matrix.arch }}
           path: |
             out/test/
             out/novaos-*.iso
+            out/novaos-*.elf
             out/novaos-*.sha256
             out/novaos-*.tar.gz
             out/MANIFEST*.txt

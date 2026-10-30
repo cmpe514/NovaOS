@@ -82,6 +82,25 @@ uint64_t syscall_dispatch(frame_t *f, bool *resched, bool *restart) {
         if (a == POWER_OFF) power_off();
         if (a == POWER_REBOOT) power_reboot();
         return ERR(E_INVAL);
+    case SYS_STORE_INFO:
+        NEED(CAP_STORAGE);
+        CHECK(a, sizeof(nova_store_info), true);
+        store_get_info((nova_store_info *)a);
+        return 0;
+    case SYS_STORE_READ:
+        NEED(CAP_STORAGE);
+        if (b > STORE_MAX) b = STORE_MAX;
+        CHECK(a, b, true);
+        return (uint64_t)store_read((void *)a, b);
+    case SYS_STORE_WRITE:
+        NEED(CAP_STORAGE);
+        if (b > STORE_MAX) return ERR(E_INVAL);
+        CHECK(a, b, false);
+        return (uint64_t)store_write((const void *)a, b);
+    case SYS_STORE_ERASE:
+        NEED(CAP_STORAGE);
+        if (a != 0x45524153) return ERR(E_INVAL);   /* "ERAS": the caller must state the intent explicitly */
+        return (uint64_t)store_erase();
     default:
         return ERR(E_NOSYS);
     }

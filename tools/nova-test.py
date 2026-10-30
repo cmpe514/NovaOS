@@ -8,7 +8,7 @@ the UI with real PS/2 key events. Results are written to OUT/results.json and OU
   tools/nova-test.py --arch aarch64 --kernel out/novaos-...-qemu-aarch64.elf --out DIR
 Both architectures are compared with the same golden screenshots (tests/golden/).
 """
-import argparse, json, os, socket, subprocess, sys, tempfile, time
+import argparse, json, os, socket, struct, subprocess, sys, tempfile, time
 
 from PIL import Image, ImageChops
 
@@ -131,14 +131,49 @@ def main():
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     results = []
+    disk = os.path.join(a.out, "data-disk.img")
+    with open(disk, "wb") as fh:          # a fresh, blank 1 MiB data disk for this run
+        fh.truncate(1 << 20)
+    drive = ["-drive", f"file={disk},if=none,id=d0,format=raw"]
     if a.arch == "x86_64":
         kvm = ["-enable-kvm"] if os.access("/dev/kvm", os.W_OK) else []
-        pc = ["qemu-system-x86_64", "-device", "VGA"] + kvm
+        pc = ["qemu-system-x86_64", "-device", "VGA"] + kvm + drive + ["-device", "virtio-blk-pci,drive=d0,disable-modern=on"]
         normal, recovery, uefi = pc + ["-cdrom", a.iso], pc + ["-cdrom", a.recovery_iso], pc + ["-bios", OVMF, "-cdrom", a.iso]
     else:
         virt = ["qemu-system-aarch64", "-M", "virt", "-cpu", "cortex-a72", "-device", "ramfb",
-                "-device", "virtio-keyboard-device", "-global", "virtio-mmio.force-legacy=false", "-kernel", a.kernel]
+                "-device", "virtio-keyboard-device", "-device", "virtio-tablet-device", "-global", "virtio-mmio.force-legacy=false"] \
+               + drive + ["-device", "virtio-blk-device,drive=d0", "-kernel", a.kernel]
         normal, recovery, uefi = virt, virt + ["-fw_cfg", "name=opt/nova/cmdline,string=nova.recovery"], None
+
+    def click(vm, x, y):
+        """Moves the pointer to framebuffer pixel (x, y) and clicks: relative PS/2 on x86, absolute tablet on ARM."""
+        if a.arch == "x86_64":
+            # QEMU only sends queued PS/2 motion when the next input event arrives, so move in small steps.
+            def move(dx, dy):
+                steps = max(abs(dx), abs(dy)) // 100 + 1
+                for i in range(steps):
+                    vm.qmp("input-send-event", events=[{"type": "rel", "data": {"axis": "x", "value": dx * (i + 1) // steps - dx * i // steps}},
+                                                       {"type": "rel", "data": {"axis": "y", "value": dy * (i + 1) // steps - dy * i // steps}}])
+                    time.sleep(0.05)
+            move(-1500, -1000)
+            move(x, y)
+        else:
+            vm.qmp("input-send-event", events=[{"type": "abs", "data": {"axis": "x", "value": (x * 32768 + 640) // 1280}},
+                                               {"type": "abs", "data": {"axis": "y", "value": (y * 32768 + 400) // 800}}])
+        time.sleep(0.4)
+        for down in (True, False):
+            vm.qmp("input-send-event", events=[{"type": "btn", "data": {"down": down, "button": "left"}}])
+            time.sleep(0.3)
+
+    def slots():
+        """(generation or None) for slots A and B, read straight from the disk image."""
+        out = []
+        with open(disk, "rb") as fh:
+            for base in (8, 136):
+                fh.seek(base * 512)
+                h = fh.read(32)
+                out.append(struct.unpack_from("<Q", h, 16)[0] if h[:8] == b"NOVASNAP" else None)
+        return out
 
     def check(name, ok, evidence=""):
         results.append({"test": name, "result": "PASS" if ok else "FAIL", "evidence": evidence})
@@ -196,7 +231,10 @@ def main():
         time.sleep(0.5)
         png = vm.shot("settings")
         check("boot: settings screenshot captured", screen_stats(png)[1] > 32, os.path.basename(png))
-        vm.keys("right", "ret")
+        vm.keys("right", "right", "ret")
+        check("settings: 24-hour clock turned on", vm.wait("NOVA_SETTING clock24=1", 20, n))
+        check("storage: changes saved to the data disk", "NOVA_STORE_SAVED" in vm.log())
+        vm.keys("left", "ret")
         check("power: Shut down from Settings powers off", vm.wait("NOVA_POWER_OFF", 20, n))
         try:
             vm.proc.wait(20)
@@ -206,7 +244,39 @@ def main():
     finally:
         vm.close()
 
-    # 2. Recovery boot entry (independent program, same theme), and "Boot normal system".
+    # 2. Persistence after a full power cycle, and pointer input.
+    vm = VM(normal, a.out, "reboot")
+    try:
+        check("persist: tasks and settings survive a restart",
+              vm.wait("NOVA_STATE_LOADED store=yes tasks=1 note_len=0 clock24=1", 120), "serial: NOVA_STATE_LOADED")
+        time.sleep(1)
+        n = len(vm.log())
+        click(vm, 873, 331)                       # Notes tile
+        check("pointer: click opens Notes", vm.wait("NOVA_SHELL_VIEW notes", 20, n))
+        vm.keys("h", "i")
+        n = len(vm.log())
+        click(vm, 112, 106)                       # back button
+        check("pointer: click on back returns home", vm.wait("NOVA_SHELL_VIEW home", 20, n))
+        check("persist: note saved", "NOVA_STORE_SAVED" in vm.log()[n - 2000:] or "NOVA_STORE_SAVED" in vm.log())
+    finally:
+        vm.close()
+
+    # 3. Interrupted write: damage the newest snapshot the way a torn write would; the previous one must load.
+    gens = slots()
+    newest = 0 if (gens[0] or 0) > (gens[1] or 0) else 1
+    with open(disk, "r+b") as fh:
+        fh.seek((8 + newest * 128 + 1) * 512 + 100)
+        b = fh.read(1); fh.seek(-1, 1); fh.write(bytes([b[0] ^ 0xff]))
+    vm = VM(normal, a.out, "torn-write")
+    try:
+        ok = vm.wait("NOVA_STORE_LOADED", 120)
+        want = f"NOVA_STORE_LOADED slot={'AB'[1 - newest]} gen={gens[1 - newest]}"
+        check("storage: damaged newest snapshot is rejected, previous one loads", ok and want in vm.log(), f"slots {gens}, expected '{want}'")
+        check("storage: shell starts with the previous state", vm.wait("NOVA_STATE_LOADED store=yes tasks=1"))
+    finally:
+        vm.close()
+
+    # 4. Recovery boot entry (independent program, same theme), and "Boot normal system".
     vm = VM(recovery, a.out, "recovery")
     try:
         check("recovery: kernel ready in recovery mode", vm.wait("NOVA_KERNEL_READY", 120) and "mode=1" in vm.log())
@@ -214,14 +284,28 @@ def main():
         check("recovery: graphical recovery ready", vm.wait("NOVA_RECOVERY_READY graphical"))
         check("recovery: shell is not started", "NOVA_SHELL_READY" not in vm.log())
         time.sleep(1)
+        n = len(vm.log())
+        vm.keys(*["down"] * 9, "ret")            # Check and repair storage
+        check("recovery: check and repair rewrites the damaged slot", vm.wait("NOVA_RECOVERY_REPAIRED", 30, n))
+        g = slots()
+        check("recovery: both snapshot slots valid after repair", g[0] is not None and g[1] is not None, f"slots {g}")
+        n = len(vm.log())
+        vm.keys("down", "ret")                    # Reset settings
+        check("recovery: reset settings", vm.wait("NOVA_RECOVERY_SETTINGS_RESET", 30, n))
+        vm.keys("down", "ret", "e", "r", "a", "s", "x", "ret")
+        time.sleep(1)
+        check("recovery: factory reset refuses a wrong confirmation", "NOVA_STORE_ERASED" not in vm.log())
+        vm.keys("ret", "e", "r", "a", "s", "e", "ret")
+        check("recovery: factory reset with typed confirmation erases the data", vm.wait("NOVA_STORE_ERASED", 30, n))
         visual(vm, "menu", "recovery.png")
         n = len(vm.log())
-        vm.keys("ret")
+        vm.keys(*["up"] * 11, "ret")
         check("recovery: 'Boot normal system' starts the shell", vm.wait("NOVA_SHELL_READY", 30, n))
+        check("recovery: shell starts empty after factory reset", vm.wait("NOVA_STATE_LOADED store=yes tasks=0 note_len=0 clock24=0", 10, n))
     finally:
         vm.close()
 
-    # 3. UEFI boot of the same ISO.
+    # 5. UEFI boot of the same ISO.
     if uefi and os.path.exists(OVMF):
         vm = VM(uefi, a.out, "uefi")
         try:

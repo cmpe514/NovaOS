@@ -27,7 +27,9 @@
 
 ## Not done yet (do not rely on it)
 
-- There is no persistent storage, so there is no crash-safe storage or power-loss testing yet (M2).
+- **Storage** (docs/STORAGE.md). It is crash-safe by design and tested with a simulated torn write.
+  Random power-cut testing is not done. Only processes holding `CAP_STORAGE` (the shell and recovery) can
+  read or write it, and erasing needs an explicit magic argument. Data on the disk is **not encrypted**.
 - There are no updates, no signatures, no A/B slots and no rollback (M4).
 - There is no entropy source, no ASLR and no stack canaries in the kernel.
 - There is no SMEP/SMAP yet. The kernel reads user memory directly after validating it.

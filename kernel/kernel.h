@@ -6,7 +6,7 @@
 #include "arch.h"      /* per-architecture: frame_t, register accessors, KERNEL_RAM_* */
 
 #define PAGE 4096ull
-#define NOVA_VERSION "0.3.0-m5"
+#define NOVA_VERSION "0.4.0"
 
 /* lib */
 void *memset(void *d, int c, size_t n);
@@ -37,6 +37,17 @@ frame_t *kernel_syscall(frame_t *f);
 frame_t *kernel_user_fault(frame_t *f, unsigned kind, const char *what, uint64_t pc, uint64_t addr);
 extern volatile uint64_t ticks;
 #define TICK_HZ 250
+
+/* Data store (kernel/store.c) on the virtio-blk disk (kernel/virtio_blk.c). */
+void store_init(void);
+void store_get_info(nova_store_info *out);
+int64_t store_read(void *dst, uint64_t max);
+int64_t store_write(const void *src, uint64_t len);
+int64_t store_erase(void);
+
+/* Pointer: drivers report relative motion or absolute position (0..32767) and the left button. */
+void input_pointer_rel(int dx, int dy, int buttons);
+void input_pointer_abs(int x, int y, int buttons);   /* buttons < 0: unchanged */
 
 /* Input: drivers report Linux input key codes (PS/2 set 1 is translated to them). */
 void input_key(uint16_t linux_code, bool pressed);

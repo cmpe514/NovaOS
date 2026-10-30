@@ -1,6 +1,6 @@
 # Nova Recovery
 
-## What exists today (M1, VERIFIED in QEMU by `make test`)
+## What exists today (0.4, VERIFIED in QEMU by `make test` on x86-64 and ARM64)
 
 - **Separate program.** `recovery/main.c` is its own ELF; it shares no code with the shell except the
   theme libraries (`libs/gfx`, `libs/novaui`).
@@ -10,12 +10,16 @@
   focus ring.
 - **Navigation.** Up/Down, Enter, Esc.
 - **Fallback.** With no usable display, it prints a text menu on the serial console.
-- **Working actions.** Boot normal system (`init` then starts the shell), System information,
-  Restart, Power off.
-- **Everything else is shown as Unavailable, with the reason.** That covers safe mode, previous image,
-  signed update, storage and logs, backup/restore, repair, reset settings and factory reset. They all
-  depend on storage (M2) or updates (M4).
-- **No user data needed.** Recovery reads nothing writable: there is no persistent storage yet at all.
+- **Navigation.** Keyboard, mouse (x86-64) or tablet pointer (ARM64).
+- **Working actions.** Boot normal system, System information, Restart, Power off, Storage information
+  (disk, slot validity, generation), Check and repair storage, Reset settings (keeps notes and tasks),
+  Factory reset.
+- **Factory reset safeguard.** It names the disk and its size and requires typing `ERASE`. A wrong
+  confirmation is refused, and the test checks this.
+- **Still Unavailable, with the reason shown.** Safe mode, previous system image, install signed update,
+  back up / restore (needs a second disk or USB).
+- **No user data needed.** Recovery starts without the data disk. When the disk is missing or
+  unreadable, it shows the reason instead.
 
 ## Planned design (not implemented)
 

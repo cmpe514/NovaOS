@@ -22,10 +22,15 @@ void rtc_read(nova_time *t) {
 }
 
 static int pci_count;
-static uint32_t pci_read(int bus, int dev, int fn, int off) {
+uint32_t pci_read(int bus, int dev, int fn, int off) {
     outl(0xcf8, 0x80000000u | bus << 16 | dev << 11 | fn << 8 | (off & 0xfc));
     return inl(0xcfc);
 }
+void pci_write(int bus, int dev, int fn, int off, uint32_t v) {
+    outl(0xcf8, 0x80000000u | bus << 16 | dev << 11 | fn << 8 | (off & 0xfc));
+    outl(0xcfc, v);
+}
+void virtio_pci_probe(int bus, int dev, int fn, uint16_t device);
 int pci_scan(void) {
     for (int bus = 0; bus < 8; bus++)
         for (int dev = 0; dev < 32; dev++)
@@ -35,6 +40,7 @@ int pci_scan(void) {
                 uint32_t cls = pci_read(bus, dev, fn, 8);
                 kprintf("pci %u:%u.%u %4x:%4x class %2x.%2x\n", bus, dev, fn, id & 0xffff, id >> 16, cls >> 24, (cls >> 16) & 0xff);
                 pci_count++;
+                if ((id & 0xffff) == 0x1af4) virtio_pci_probe(bus, dev, fn, id >> 16);
                 if (fn == 0 && !(pci_read(bus, dev, 0, 12) >> 16 & 0x80)) break;   /* single-function device */
             }
     return pci_count;

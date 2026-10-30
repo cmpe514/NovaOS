@@ -29,7 +29,7 @@ frame_t *isr_dispatch(frame_t *f) {
         int irq = f->vec - 32;
         pic_eoi(irq);
         if (irq == 0) return kernel_tick(f);
-        if (irq == 1) kbd_irq();
+        if (irq == 1 || irq == 12) kbd_irq();   /* both i8042 ports share one reader */
         return f;
     }
     if (f->vec == 0x80) return kernel_syscall(f);

@@ -7,7 +7,8 @@
  * Negative results are errors. Every pointer argument is checked against the caller's page tables. */
 enum {
     SYS_EXIT = 0, SYS_WRITE, SYS_YIELD, SYS_SPAWN, SYS_WAIT, SYS_FB_MAP, SYS_INPUT_READ,
-    SYS_TIME, SYS_TICKS, SYS_SLEEP, SYS_SYSINFO, SYS_POWER, SYS_COUNT
+    SYS_TIME, SYS_TICKS, SYS_SLEEP, SYS_SYSINFO, SYS_POWER,
+    SYS_STORE_INFO, SYS_STORE_READ, SYS_STORE_WRITE, SYS_STORE_ERASE, SYS_COUNT
 };
 
 #define E_PERM    1    /* missing capability */
@@ -23,7 +24,8 @@ enum {
 #define CAP_INPUT    (1u << 1)   /* read keyboard events */
 #define CAP_SPAWN    (1u << 2)   /* start programs */
 #define CAP_POWER    (1u << 3)   /* reboot / power off */
-#define CAP_ALL      0xfu
+#define CAP_STORAGE  (1u << 4)   /* read/write the NovaOS data store */
+#define CAP_ALL      0x1fu
 
 /* A process killed by a CPU exception exits with EXIT_FAULT | kind (x86 vector numbers; AArch64 maps to them). */
 #define EXIT_FAULT 0x100
@@ -45,12 +47,14 @@ enum {
 typedef struct { uint64_t addr; uint32_t width, height, pitch, bpp; } nova_fb_info;
 
 enum { KEY_NONE = 0, KEY_UP = 0x100, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_HOME, KEY_END, KEY_DELETE,
-       KEY_F1, KEY_F2, KEY_SUPER };
+       KEY_F1, KEY_F2, KEY_SUPER,
+       KEY_POINTER = 0x200,      /* pointer moved or button changed: x, y = position in pixels, pressed = left button */
+     };
 #define KEY_ENTER '\n'
 #define KEY_ESC 27
 #define KEY_BACKSPACE '\b'
 #define KEY_TAB '\t'
-typedef struct { uint16_t key; uint8_t pressed, shift; } nova_input_event;
+typedef struct { uint16_t key; uint8_t pressed, shift; uint16_t x, y; } nova_input_event;
 
 typedef struct { uint16_t year; uint8_t month, day, hour, minute, second, weekday; } nova_time;
 
@@ -60,6 +64,18 @@ typedef struct { uint16_t year; uint8_t month, day, hour, minute, second, weekda
 #define BOOT_NORMAL 0
 #define BOOT_RECOVERY 1
 #define BOOT_SAFE 2
+
+/* Data store: a crash-safe A/B snapshot on the NovaOS data disk (see docs/STORAGE.md). */
+#define STORE_MAX 65024
+typedef struct {
+    uint32_t present;          /* a usable NovaOS data disk was found */
+    uint32_t has_data;         /* at least one valid snapshot */
+    uint64_t disk_bytes, generation;
+    uint32_t slot;             /* 0 = A, 1 = B: slot holding the current snapshot */
+    uint32_t valid[2];         /* per-slot validity (checksums correct) */
+    uint32_t length;
+    char status[48];           /* human-readable state or the reason the disk is not used */
+} nova_store_info;
 
 typedef struct {
     uint64_t mem_total, mem_free;     /* bytes */

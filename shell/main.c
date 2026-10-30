@@ -1,21 +1,47 @@
 /* NovaOS shell: native home screen and apps, rendered with the theme extracted from ui/reference/ui.html.
  * Keyboard: arrows/Tab move focus, Enter opens, Esc or the Super key goes home. */
 #include "novaui.h"
+#include "nova/shellstate.h"
 
 enum { V_HOME, V_APP };
 static int view = V_HOME, app = -1, focus = 0;
 static nova_time now;
 static nova_sysinfo si;
 
-/* ---------- app state (in memory: persistent storage is milestone M2) ---------- */
+/* ---------- app state (saved to the data store after every change) ---------- */
 static char note[2048];
-static struct { char text[64]; bool done; } tasks[24];
+static struct { char text[64]; bool done; } tasks[SHELL_MAX_TASKS];
 static int ntasks, task_sel = -1;
 static char task_input[64];
 static char calc_disp[32] = "0";
 static int64_t calc_acc; static char calc_op; static bool calc_fresh = true, calc_err;
 static int settings_sel;
 static int drawer_focus;
+static nova_store_info store;
+static int ptr_x = -1, ptr_y, ptr_btn;
+enum { ACT_HOME = 1, ACT_QUICK = 2, ACT_OPEN = 100, ACT_TASK_TOGGLE = 200, ACT_TASK_DEL = 300, ACT_TASK_INPUT = 399,
+       ACT_CALC = 400, ACT_SET = 500 };
+
+static shell_state st;
+static void save(void) {
+    memset(&st, 0, sizeof st);
+    st.version = SHELL_STATE_VERSION;
+    memcpy(st.note, note, sizeof st.note);
+    st.ntasks = (uint32_t)ntasks;
+    for (int i = 0; i < ntasks; i++) { memcpy(st.tasks[i].text, tasks[i].text, 64); st.tasks[i].done = tasks[i].done; }
+    st.settings.clock24 = ui_clock24;
+    sys_store_write(&st, sizeof st);
+    sys_store_info(&store);
+}
+static void load(void) {
+    sys_store_info(&store);
+    if (sys_store_read(&st, sizeof st) != (int64_t)sizeof st || st.version != SHELL_STATE_VERSION) return;
+    memcpy(note, st.note, sizeof note); note[sizeof note - 1] = 0;
+    ntasks = st.ntasks <= SHELL_MAX_TASKS ? (int)st.ntasks : 0;
+    for (int i = 0; i < ntasks; i++) { memcpy(tasks[i].text, st.tasks[i].text, 64); tasks[i].text[63] = 0; tasks[i].done = st.tasks[i].done; }
+    ui_clock24 = st.settings.clock24 != 0;
+}
+static const char *save_note(void) { return store.present ? "Saved on the data disk" : "Not saved: no NovaOS data disk attached"; }
 
 #define SCALE 1000000ll
 static int64_t calc_parse(const char *s) {
@@ -98,6 +124,7 @@ static void draw_tile(int i, rect r, bool focused) {
     int w = gfx_text_width(&font_label, a->label, 0);
     gfx_text(&ui.back, &font_label, r.x + 30 - w / 2, r.y + 78, a->label, C_TEXT, 0);
     if (focused) ui_focus_ring(r, 20);
+    ui_hit((rect){ r.x - 20, r.y, 100, 86 }, ACT_OPEN + i);
 }
 
 static void draw_home(void) {
@@ -117,7 +144,9 @@ static void draw_home(void) {
     gfx_text(&ui.back, &font_body, card.x + 21, card.y + ui_y(87), "Your favorite tools, always close at hand.", C_SOFT, 0);
 
     gfx_text(&ui.back, &font_h2, ui_x(928), ui_y(305), "Your apps", C_TEXT, 0);
-    ui_action((rect){ ui_x(1240), ui_y(280), ui_x(127), ui_y(33) }, "Quick settings", ICON_SLIDERS, focus == 12);
+    rect qs = { ui_x(1240), ui_y(280), ui_x(127), ui_y(33) };
+    ui_action(qs, "Quick settings", ICON_SLIDERS, focus == 12);
+    ui_hit(qs, ACT_QUICK);
     for (int i = 0; i < NOVA_APP_COUNT; i++)
         draw_tile(i, tile_rect(i, ui_x(949), ui_y(339), ui_x(113), ui_y(110)), focus == i);
 
@@ -126,6 +155,8 @@ static void draw_home(void) {
     gfx_icon(&ui.back, ICON_DRAWER, dock.x + 16, dock.y + 7, C_TEXT);
     gfx_round(&ui.back, (rect){ dock.x + 64, dock.y + 18, 58, 5 }, 2, 0xe8faff, 255);
     gfx_icon(&ui.back, ICON_SLIDERS, dock.x + 143, dock.y + 7, C_TEXT);
+    ui_hit((rect){ dock.x, dock.y, 60, dock.h }, ACT_OPEN + 11);
+    ui_hit((rect){ dock.x + 125, dock.y, 60, dock.h }, ACT_QUICK);
 }
 
 static int content_x(void) { return ui.w > 1100 + 96 ? (ui.w - 1100) / 2 : 48; }
@@ -134,8 +165,8 @@ static int content_y(void) { return ui_y(54) + 110; }
 
 static void chip(int x, int y, const char *text) {
     int w = gfx_text_width(&font_small, text, 0) + 24;
-    gfx_round(&ui.back, (rect){ x, y, w, 26 }, 13, 0xf6a9a4, 0x30);
-    gfx_text(&ui.back, &font_small, x + 12, y + 18, text, 0xffd9d4, 0);
+    gfx_round(&ui.back, (rect){ x, y, w, 26 }, 13, store.present ? NOVA_ACCENT : 0xf6a9a4, 0x30);
+    gfx_text(&ui.back, &font_small, x + 12, y + 18, text, store.present ? 0xd8fbf6 : 0xffd9d4, 0);
 }
 
 static void draw_unavailable(const char *what, const char *why) {
@@ -147,7 +178,7 @@ static void draw_unavailable(const char *what, const char *why) {
 }
 
 static void draw_notes(void) {
-    chip(content_x(), content_y() - 8, "Not saved: storage driver arrives in milestone M2");
+    chip(content_x(), content_y() - 8, save_note());
     rect r = { content_x(), content_y() + 30, content_w() < 760 ? content_w() : 760, ui.h - content_y() - 90 };
     ui_glass(r, 26);
     char buf[2050]; size_t n = strlen(note);
@@ -157,7 +188,7 @@ static void draw_notes(void) {
 }
 
 static void draw_tasks(void) {
-    chip(content_x(), content_y() - 8, "Not saved: storage driver arrives in milestone M2");
+    chip(content_x(), content_y() - 8, save_note());
     int w = content_w() < 760 ? content_w() : 760, x = content_x(), y = content_y() + 30;
     rect in = { x, y, w, 52 };
     ui_glass(in, 18);
@@ -165,6 +196,7 @@ static void draw_tasks(void) {
     gfx_text(&ui.back, &font_body, x + 22, y + 32, task_input[0] || task_sel < 0 ? buf : "", C_TEXT, 0);
     if (!task_input[0]) gfx_text(&ui.back, &font_body, x + 30, y + 32, "Add a task and press Enter", C_MUTED, 0);
     if (task_sel < 0) ui_focus_ring(in, 18);
+    ui_hit(in, ACT_TASK_INPUT);
     y += 72;
     if (!ntasks) gfx_text(&ui.back, &font_body, x + 4, y + 20, "No tasks yet.", C_MUTED, 0);
     for (int i = 0; i < ntasks; i++, y += 56) {
@@ -177,8 +209,10 @@ static void draw_tasks(void) {
         if (tasks[i].done) gfx_fill(&ui.back, (rect){ x + 52, y + 25, gfx_text_width(&font_body, tasks[i].text, 0), 1 }, C_MUTED, 255);
         gfx_icon(&ui.back, ICON_DELETE, x + w - 44, y + 10, i == task_sel ? 0xf6a9a4 : C_MUTED);
         if (i == task_sel) ui_focus_ring(r, 16);
+        ui_hit(r, ACT_TASK_TOGGLE + i);
+        ui_hit((rect){ x + w - 52, y, 52, 48 }, ACT_TASK_DEL + i);
     }
-    gfx_text(&ui.back, &font_small, x, ui.h - 40, "Up/Down: select   Space: complete   Delete: remove   Esc: home", C_MUTED, 0);
+    gfx_text(&ui.back, &font_small, x, ui.h - 40, "Up/Down: select   Space or click: complete   Delete or click the icon: remove   Esc: home", C_MUTED, 0);
 }
 
 static const char *const calc_keys[20] = { "C", "<", "%", "/", "7", "8", "9", "x", "4", "5", "6", "-", "1", "2", "3", "+", "0", "00", ".", "=" };
@@ -195,6 +229,7 @@ static void draw_calculator(void) {
         gfx_round(&ui.back, k, 18, i == 19 ? NOVA_ACCENT : 0xffffff, i == 19 ? 255 : op ? 0x24 : 0x14);
         int lw = gfx_text_width(&font_h2, calc_keys[i], 0);
         gfx_text(&ui.back, &font_h2, k.x + (96 - lw) / 2, k.y + 36, calc_keys[i], i == 19 ? 0x10222c : C_TEXT, 0);
+        ui_hit(k, ACT_CALC + i);
     }
     gfx_text(&ui.back, &font_small, x, y + 480, "Type digits and + - * / . Enter = result, Backspace, C = clear.", C_MUTED, 0);
 }
@@ -253,12 +288,19 @@ static void draw_settings(void) {
     row(ix, &yy, w, "Display", b, false);
     row(ix, &yy, w, "Keyboard", si.kbd_ok ? "Keyboard working" : "No keyboard found", !si.kbd_ok);
     b[0] = 0; fmt_u(b, si.pci_devices, 1); str_cat(b, " devices found"); row(ix, &yy, w, "Devices", b, false);
-    row(ix, &yy, w, "Storage", "No driver yet (virtio-blk: milestone M2)", true);
+    b[0] = 0;
+    if (store.present) { fmt_u(b, store.disk_bytes >> 10, 1); str_cat(b, " KiB data disk, "); str_cat(b, store.has_data ? "saved, generation " : "nothing saved yet"); if (store.has_data) fmt_u(b + strlen(b), store.generation, 1); }
+    else str_cat(b, store.status[0] ? store.status : "No data disk");
+    row(ix, &yy, w, "Storage", b, !store.present);
     row(ix, &yy, w, "Network", "No driver yet (virtio-net + TCP/IP: milestone M4)", true);
     row(ix, &yy, w, "Sound, battery", "Not supported yet", true);
-    const char *acts[2] = { "Restart", "Shut down" };
-    for (int i = 0; i < 2; i++) ui_action((rect){ x + i * 130, y + 440, 118, 40 }, acts[i], -1, settings_sel == i);
-    gfx_text(&ui.back, &font_small, x, y + 506, "Left/Right: choose   Enter: confirm", C_MUTED, 0);
+    const char *acts[3] = { "Restart", "Shut down", ui_clock24 ? "24-hour clock: On" : "24-hour clock: Off" };
+    for (int i = 0; i < 3; i++) {
+        rect r = { x + i * 130, y + 440, i == 2 ? 170 : 118, 40 };
+        ui_action(r, acts[i], -1, settings_sel == i);
+        ui_hit(r, ACT_SET + i);
+    }
+    gfx_text(&ui.back, &font_small, x, y + 506, "Left/Right: choose   Enter or click: confirm", C_MUTED, 0);
 }
 
 static void draw_drawer(void) {
@@ -268,6 +310,7 @@ static void draw_drawer(void) {
 }
 
 static void draw(void) {
+    ui_hit_reset();
     memcpy(ui.back.px, ui.wall.px, (size_t)ui.w * ui.h * 4);
     if (view == V_HOME) draw_home();
     else {
@@ -287,6 +330,7 @@ static void draw(void) {
         else if (!strcmp(id, "browser")) draw_unavailable("No web browser yet", "A real browser needs networking (M4), TLS and a ported web engine. This is a planning item; see docs/ROADMAP.md.");
     }
     ui_status_bar(&now, "No network");
+    if (ptr_x >= 0) ui_cursor(ptr_x, ptr_y);
     ui_present();
 }
 
@@ -308,6 +352,7 @@ static void key(int k) {
         size_t n = strlen(note);
         if (k == KEY_BACKSPACE) { if (n) note[n - 1] = 0; }
         else if ((k == KEY_ENTER || (k >= 32 && k < 127)) && n < sizeof note - 2) { note[n] = (char)k; note[n + 1] = 0; }
+        save();
     } else if (!strcmp(id, "tasks")) {
         size_t n = strlen(task_input);
         if (k == KEY_UP) task_sel = task_sel < 0 ? ntasks - 1 : task_sel - 1;
@@ -316,10 +361,11 @@ static void key(int k) {
         else if (task_sel >= 0 && (k == KEY_DELETE || k == KEY_BACKSPACE)) {
             for (int i = task_sel; i < ntasks - 1; i++) tasks[i] = tasks[i + 1];
             ntasks--; if (task_sel >= ntasks) task_sel = ntasks - 1;
-        } else if (task_sel < 0 && k == KEY_ENTER && n && ntasks < 24) {
+        } else if (task_sel < 0 && k == KEY_ENTER && n && ntasks < SHELL_MAX_TASKS) {
             memcpy(tasks[ntasks].text, task_input, sizeof task_input); tasks[ntasks++].done = false; task_input[0] = 0;
         } else if (task_sel < 0 && k == KEY_BACKSPACE && n) task_input[n - 1] = 0;
         else if (task_sel < 0 && k >= 32 && k < 127 && n < sizeof task_input - 1) { task_input[n] = (char)k; task_input[n + 1] = 0; }
+        if (k != KEY_UP && k != KEY_DOWN && (task_sel >= 0 || k == KEY_ENTER)) save();
         int done = 0; for (int i = 0; i < ntasks; i++) done += tasks[i].done;
         char m[48] = "NOVA_TASKS total="; fmt_u(m + strlen(m), ntasks, 1); str_cat(m, " done="); fmt_u(m + strlen(m), done, 1);
         str_cat(m, "\n"); puts_(m);
@@ -328,7 +374,9 @@ static void key(int k) {
         else calc_key(k);
         char m[48] = "NOVA_CALC "; str_cat(m, calc_disp); str_cat(m, "\n"); puts_(m);   /* test evidence */
     } else if (!strcmp(id, "settings")) {
-        if (k == KEY_LEFT || k == KEY_RIGHT || k == KEY_TAB) settings_sel ^= 1;
+        if (k == KEY_RIGHT || k == KEY_TAB) settings_sel = (settings_sel + 1) % 3;
+        else if (k == KEY_LEFT) settings_sel = (settings_sel + 2) % 3;
+        else if (k == KEY_ENTER && settings_sel == 2) { ui_clock24 = !ui_clock24; save(); puts_(ui_clock24 ? "NOVA_SETTING clock24=1\n" : "NOVA_SETTING clock24=0\n"); }
         else if (k == KEY_ENTER) sys_power(settings_sel ? POWER_OFF : POWER_REBOOT);
     } else if (!strcmp(id, "drawer")) {
         int n = NOVA_APP_COUNT - 1;
@@ -340,8 +388,34 @@ static void key(int k) {
     }
 }
 
+static void click(int x, int y) {
+    int a = ui_hit_at(x, y);
+    char m[64] = "NOVA_CLICK action="; fmt_u(m + strlen(m), (uint64_t)a, 1); str_cat(m, " x="); fmt_u(m + strlen(m), (uint64_t)x, 1);
+    str_cat(m, " y="); fmt_u(m + strlen(m), (uint64_t)y, 1); str_cat(m, "\n"); puts_(m);
+    if (!a) return;
+    if (a == ACT_HOME) { view = V_HOME; return; }
+    if (a == ACT_QUICK) { open_app(10); return; }
+    if (a >= ACT_OPEN && a < ACT_OPEN + NOVA_APP_COUNT) { open_app(a - ACT_OPEN); return; }
+    if (a == ACT_TASK_INPUT) { task_sel = -1; return; }
+    if (a >= ACT_TASK_TOGGLE && a < ACT_TASK_TOGGLE + SHELL_MAX_TASKS) { task_sel = a - ACT_TASK_TOGGLE; key(' '); return; }
+    if (a >= ACT_TASK_DEL && a < ACT_TASK_DEL + SHELL_MAX_TASKS) { task_sel = a - ACT_TASK_DEL; key(KEY_DELETE); return; }
+    if (a >= ACT_CALC && a < ACT_CALC + 20) {
+        static const int keys[20] = { 'c', KEY_BACKSPACE, '%', '/', '7', '8', '9', '*', '4', '5', '6', '-', '1', '2', '3', '+', '0', 0, '.', '=' };
+        int i = a - ACT_CALC;
+        if (i == 17) { key('0'); key('0'); } else key(keys[i]);
+        return;
+    }
+    if (a >= ACT_SET && a < ACT_SET + 3) { settings_sel = a - ACT_SET; key(KEY_ENTER); }
+}
+
 int main(void) {
     if (!ui_init()) { puts_("shell: no display available\n"); return 3; }
+    load();
+    {
+        char m[96] = "NOVA_STATE_LOADED store="; str_cat(m, store.present ? "yes" : "no"); str_cat(m, " tasks=");
+        fmt_u(m + strlen(m), (uint64_t)ntasks, 1); str_cat(m, " note_len="); fmt_u(m + strlen(m), strlen(note), 1);
+        str_cat(m, ui_clock24 ? " clock24=1\n" : " clock24=0\n"); puts_(m);
+    }
     sys_time(&now);
     draw();
     puts_("NOVA_SHELL_READY\n");
@@ -350,7 +424,13 @@ int main(void) {
         nova_input_event ev[16];
         int64_t n = sys_input_read(ev, 16);
         bool dirty = false;
-        for (int i = 0; i < n; i++) if (ev[i].pressed) { key(ev[i].key); dirty = true; }
+        for (int i = 0; i < n; i++) {
+            if (ev[i].key == KEY_POINTER) {
+                ptr_x = ev[i].x; ptr_y = ev[i].y; dirty = true;
+                if (ev[i].pressed && !ptr_btn) click(ptr_x, ptr_y);
+                ptr_btn = ev[i].pressed;
+            } else if (ev[i].pressed) { key(ev[i].key); dirty = true; }
+        }
         sys_time(&now);
         bool in_clock = view == V_APP && !strcmp(nova_apps[app].id, "clock");
         if (now.minute != last_min || (in_clock && now.second != last_sec)) dirty = true;

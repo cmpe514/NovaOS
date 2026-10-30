@@ -6,15 +6,17 @@ It does not use Linux, Android, Chromium or Electron.
 
 ![NovaOS home screen, rendered by the NovaOS shell in QEMU](docs/img/home.png)
 
-## Status (honest, as of 0.3.0-m5)
+## Status (honest, as of 0.4.0)
 
 | | State | Evidence |
 |---|---|---|
-| x86-64 QEMU (BIOS and UEFI) boots the NovaOS kernel into the native shell | **VERIFIED** | `make test`: 42 checks, including 14 kernel protection self-tests, UI driven by key events, golden screenshots |
-| ARM64 QEMU `virt` boots the same kernel into the shell and recovery | **VERIFIED** | `make test ARCH=aarch64`: 38 checks; same self-tests; screenshots pixel-identical to the x86-64 goldens |
-| Nova Recovery (separate program, same design) | **VERIFIED**: menu, boot normal system, restart/power off | `make test` recovery run |
-| Apps: Calculator, Tasks, Notes, Clock, Calendar, Settings, All apps | **VERIFIED in memory only** | Not saved: no storage driver yet |
-| Storage, networking, mouse/touch, audio, updates | **Not implemented** | [docs/ROADMAP.md](docs/ROADMAP.md) |
+| x86-64 QEMU (BIOS and UEFI) boots the NovaOS kernel into the native shell | **VERIFIED** | `make test`: 56 checks, including 14 kernel protection self-tests, UI driven by key and mouse events, golden screenshots |
+| ARM64 QEMU `virt` boots the same kernel into the shell and recovery | **VERIFIED** | `make test ARCH=aarch64`: 52 checks, same self-tests, screenshots identical to the x86-64 goldens |
+| Saved data: notes, tasks, settings on a virtio disk (crash-safe A/B snapshots) | **VERIFIED** | survives power-off; a damaged newest snapshot falls back to the previous one ([docs/STORAGE.md](docs/STORAGE.md)) |
+| Mouse (x86-64 PS/2) and tablet pointer (ARM64 virtio) | **VERIFIED** | clicks open apps and press the back button |
+| Nova Recovery: storage information, check and repair, reset settings, factory reset (typed confirmation), boot normal system, restart, power off | **VERIFIED** | `make test` recovery run |
+| Apps: Calculator, Tasks, Notes, Clock, Calendar, Settings, All apps | **VERIFIED** | Notes, Tasks and the 24-hour clock setting are saved |
+| Networking, touch screens, audio, updates, files | **Not implemented** | [docs/ROADMAP.md](docs/ROADMAP.md) |
 | Nothing Phone (3a) Lite | **BLOCKED**, does not run on the phone | [docs/PHONE_PORT.md](docs/PHONE_PORT.md) |
 
 Apps that need missing hardware support (Weather, Music, Photos, Files, Browser) say so on screen. They

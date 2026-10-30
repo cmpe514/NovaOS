@@ -28,6 +28,10 @@ static inline int64_t sc3(uint64_t n, uint64_t a, uint64_t b, uint64_t c) {
 #define sys_sleep(ms)          sc3(SYS_SLEEP, (ms), 0, 0)
 #define sys_sysinfo(s)         sc3(SYS_SYSINFO, (uint64_t)(s), 0, 0)
 #define sys_power(cmd)         sc3(SYS_POWER, (cmd), 0, 0)
+#define sys_store_info(i)      sc3(SYS_STORE_INFO, (uint64_t)(i), 0, 0)
+#define sys_store_read(b, n)   sc3(SYS_STORE_READ, (uint64_t)(b), (n), 0)
+#define sys_store_write(b, n)  sc3(SYS_STORE_WRITE, (uint64_t)(b), (n), 0)
+#define sys_store_erase()      sc3(SYS_STORE_ERASE, 0x45524153, 0, 0)
 
 void *memset(void *d, int c, size_t n);
 void *memcpy(void *d, const void *s, size_t n);

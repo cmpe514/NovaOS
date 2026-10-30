@@ -26,7 +26,7 @@ make run
 3. QEMU opens its window through WSLg (Windows 11, or Windows 10 with WSLg). If no window appears, run
    `make image` and open the ISO in QEMU for Windows instead:
    ```powershell
-   qemu-system-x86_64 -m 512 -device VGA -cdrom novaos-0.3.0-m5-qemu-x86_64.iso
+   qemu-system-x86_64 -m 512 -device VGA -cdrom novaos-0.4.0-qemu-x86_64.iso
    ```
 
 ## ARM64 (QEMU virt)
@@ -38,7 +38,7 @@ make run ARCH=aarch64
 Or run a built kernel directly:
 
 ```bash
-qemu-system-aarch64 -M virt -cpu cortex-a72 -m 512 -serial stdio -device ramfb -device virtio-keyboard-device -global virtio-mmio.force-legacy=false -kernel novaos-0.3.0-m5-qemu-aarch64.elf
+qemu-system-aarch64 -M virt -cpu cortex-a72 -m 512 -serial stdio -device ramfb -device virtio-keyboard-device -global virtio-mmio.force-legacy=false -kernel novaos-0.4.0-qemu-aarch64.elf
 ```
 
 Add `-fw_cfg name=opt/nova/cmdline,string=nova.recovery` to start Nova Recovery.
@@ -49,14 +49,16 @@ Each CI run uploads `novaos-<version>-qemu-x86_64.iso` and its `.sha256` (Action
 *novaos-qemu-x86_64*). Check the checksum first:
 
 ```bash
-sha256sum -c novaos-0.3.0-m5-qemu-x86_64.iso.sha256
+sha256sum -c novaos-0.4.0-qemu-x86_64.iso.sha256
 ```
 ```bash
-qemu-system-x86_64 -m 512 -device VGA -serial stdio -cdrom novaos-0.3.0-m5-qemu-x86_64.iso
+qemu-system-x86_64 -m 512 -device VGA -serial stdio -cdrom novaos-0.4.0-qemu-x86_64.iso
 ```
 
 For UEFI, add `-bios /usr/share/ovmf/OVMF.fd`. VirtualBox may work (VM type *Other/Unknown 64-bit*, the ISO
 in the optical drive), but it is **untested**.
+
+Your notes, tasks and settings are kept in `out/data-<arch>.img`. Delete that file to start fresh.
 
 ## Keys
 

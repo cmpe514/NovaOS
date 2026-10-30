@@ -6,9 +6,9 @@ QEMU; **UNVERIFIED** = code exists but no test shows it; **BLOCKED** = cannot pr
 | Milestone | State | Evidence / what is missing |
 |---|---|---|
 | M1 Kernel boots in QEMU with serial and framebuffer | **VERIFIED** (x86-64, BIOS and UEFI) | `NOVA_KERNEL_READY`, screenshots in `out/test/` |
-| M2 Userspace, storage, input, persistent settings | **Partly done.** Userspace, syscalls and keyboard: VERIFIED. Storage and persistence: not started | next items: virtio-blk, NovaFS, settings store, PS/2 mouse, power-loss test |
-| M3 Native shell matches the UI, core apps work | **Partly done.** Home screen, Calculator, Tasks, Notes, Clock, Calendar, Settings and All apps work in memory. The home screen is VERIFIED against a golden screenshot | not saved to disk; no pointer/touch; no animations; Weather/Music/Photos/Files/Browser show "Not available" with reasons |
-| M4 Networking and themed recovery | Recovery: **partly done** (VERIFIED menu, boot-normal, power actions). Networking: not started | virtio-net, TCP/IP, DHCP, DNS; signed updates; A/B slots |
+| M2 Userspace, storage, input, persistent settings | **VERIFIED** (0.4) | virtio-blk on both architectures, A/B snapshot store, saved notes/tasks/settings, PS/2 mouse and virtio tablet. Not done: a real file system, random power-cut testing |
+| M3 Native shell matches the UI, core apps work | **Mostly done.** Home screen, Calculator, Tasks, Notes, Clock, Calendar, Settings and All apps work with keyboard and pointer; data is saved | no animations; no touch screen; Weather/Music/Photos/Files/Browser show "Not available" with reasons |
+| M4 Networking and themed recovery | Recovery: **mostly done** (VERIFIED: storage info, check and repair, reset settings, factory reset, boot normal, power). Networking: not started | virtio-net, TCP/IP, DHCP, DNS; signed updates and system A/B slots; backup to a second disk |
 | M5 ARM64 QEMU reaches shell and recovery | **VERIFIED** (QEMU `virt`, Cortex-A72) | `make test ARCH=aarch64`: boot, 14 self-tests, shell UI, recovery, PSCI power off. Not verified: GICv3, other CPUs, more than 1 GiB of RAM, SMP |
 | M6 Verified phone boot | **BLOCKED** | docs/PHONE_PORT.md |
 | M7 Phone install, restore, update, recovery | **BLOCKED** | depends on M6 and a verified stock restoration route |

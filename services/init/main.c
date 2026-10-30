@@ -34,7 +34,7 @@ int main(uint64_t boot_mode) {
 
     const char *ui = boot_mode == BOOT_RECOVERY ? "recovery" : "shell";
     for (int attempt = 0; ; attempt++) {
-        int64_t pid = sys_spawn(ui, CAP_DISPLAY | CAP_INPUT | CAP_POWER | (ui[0] == 'r' ? CAP_SPAWN : 0), boot_mode);
+        int64_t pid = sys_spawn(ui, CAP_DISPLAY | CAP_INPUT | CAP_POWER | CAP_STORAGE | (ui[0] == 'r' ? CAP_SPAWN : 0), boot_mode);
         if (pid < 0) { puts_("init: cannot start the user interface\n"); break; }
         int64_t code = sys_wait(pid);
         puts_("init: user interface exited\n");

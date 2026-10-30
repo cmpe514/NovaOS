@@ -32,6 +32,7 @@ void kernel_start(void) {
     boot_mode = str_contains(boot_cmdline, "nova.recovery") ? BOOT_RECOVERY :
                 str_contains(boot_cmdline, "nova.safe") ? BOOT_SAFE : BOOT_NORMAL;
     kprintf("pmm: %lu KiB free\n", pmm_free_count() * 4);
+    store_init();
     task_init();
     kprintf("NOVA_KERNEL_READY arch=%s mem_free_kib=%lu fb=%s kbd=%s devices=%d mode=%u\n", arch_name, pmm_free_count() * 4,
             fb.ok ? "yes" : "no", kbd_ok ? "yes" : "no", device_count, boot_mode);

@@ -10,13 +10,15 @@ QEMU's virtual hardware), **experimental**, **unsupported**, **blocked**.
 | 8254 PIT | qemu-x86_64 | `drivers/pc/pic_pit.c`, 250 Hz | PIC | preemption, `sleep`, uptime in Settings | implemented | — |
 | Exceptions / IDT | qemu-x86_64 | `arch/x86_64/cpu.c`, `isr.S` | — | user page faults, #GP and NX faults kill only the process (self-tests) | implemented | — |
 | i8042 PS/2 keyboard | qemu-x86_64 | `drivers/pc/ps2kbd.c`, set 1 | PIC | QMP key events drive the shell, calculator and tasks (`make test`) | implemented | USB HID not done |
-| PS/2 mouse / pointer | qemu-x86_64 | — | i8042 | — | unsupported | next input item (M2) |
+| PS/2 mouse | qemu-x86_64 | `drivers/pc/ps2kbd.c`, aux port, IRQ 12, relative | i8042 | QMP mouse events click tiles and the back button | implemented | no wheel |
 | Touch | qemu-x86_64 / phone | — | virtio-input / vendor touch IC | — | unsupported | M3 / M6 |
 | CMOS RTC | qemu-x86_64 | `drivers/pc/rtc_pci_power.c` | — | clock shows the time set with `-rtc base=` | implemented | no time zones |
 | PCI enumeration | qemu-x86_64 | config mechanism #1, buses 0–7 | — | 6 devices found and listed (serial log, Settings) | implemented | no BAR or MSI handling yet |
 | Framebuffer | qemu-x86_64 (BIOS + UEFI) | bootloader-provided linear FB (Multiboot2 tag 8) | GRUB | 1280×800×32, screenshots in `make test` | implemented | resolution is fixed by the bootloader |
 | virtio-gpu | qemu-x86_64 | — | PCI, virtqueues | — | unsupported | M3 |
-| virtio-blk | qemu-x86_64 | — | PCI, virtqueues | — | unsupported | **M2, next** |
+| virtio-blk | qemu-x86_64 | `drivers/pc/virtio_pci.c` (legacy I/O transport) + `kernel/virtio_blk.c`, polled | PCI | data survives power-off; torn-write fallback test | implemented | needs `disable-modern=on`; modern virtio-pci not done |
+| virtio-blk | qemu-aarch64 | `drivers/virt/virtio_mmio.c` + `kernel/virtio_blk.c`, polled | virtio-mmio | same tests as x86-64 | implemented | — |
+| virtio-input tablet (pointer) | qemu-aarch64 | `drivers/virt/virtio_mmio.c`, absolute | GIC | QMP absolute events click tiles and the back button | implemented | multi-touch not done |
 | virtio-net | qemu-x86_64 | — | PCI, virtqueues | — | unsupported | M4 |
 | Entropy (RDRAND / virtio-rng) | qemu-x86_64 | — | — | — | unsupported | M2 (needed before signing/TLS) |
 | Audio (virtio-snd / HDA) | qemu-x86_64 | — | — | — | unsupported | after M4 |

@@ -1,6 +1,7 @@
 # Builds the ISO and publishes it as a GitHub Release, so people can download it instead of building.
 #   Actions → release → Run workflow (enter a tag such as v0.1.0), or push a tag: git tag v0.1.0 && git push origin v0.1.0
-name: release
+# LEGACY: releases of the previous Debian-based appliance.
+name: legacy-linux-release
 on:
   push:
     tags: ['v*']
@@ -27,9 +28,9 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
       - name: Build the ISO
-        run: make iso
+        run: make -f legacy.mk iso
       - name: Boot test (BIOS, UEFI, persistence)
-        run: make smoke
+        run: make -f legacy.mk smoke
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}

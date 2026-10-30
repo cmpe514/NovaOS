@@ -1,0 +1,21 @@
+# NovaOS boot menu (GRUB 2 is used only as the bootloader; it loads the NovaOS kernel via Multiboot2).
+serial --unit=0 --speed=115200
+terminal_input console serial
+terminal_output console serial
+set timeout=@TIMEOUT@
+set default=@DEFAULT@
+insmod all_video
+insmod gfxterm
+set gfxmode=1280x800x32,1280x720x32,1024x768x32,auto
+set gfxpayload=keep
+set menu_color_normal=white/black
+set menu_color_highlight=black/cyan
+
+menuentry "NovaOS" {
+    multiboot2 /boot/novaos.elf
+    boot
+}
+menuentry "Nova Recovery" {
+    multiboot2 /boot/novaos.elf nova.recovery
+    boot
+}

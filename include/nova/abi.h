@@ -1,0 +1,61 @@
+/* NovaOS kernel <-> userspace ABI (syscall numbers, structures, error codes). Shared by both sides. */
+#pragma once
+#include <stdint.h>
+
+/* Calling convention: `int $0x80`, number in rax, arguments in rdi, rsi, rdx; result in rax.
+ * Negative results are errors. Every pointer argument is checked against the caller's page tables. */
+enum {
+    SYS_EXIT = 0, SYS_WRITE, SYS_YIELD, SYS_SPAWN, SYS_WAIT, SYS_FB_MAP, SYS_INPUT_READ,
+    SYS_TIME, SYS_TICKS, SYS_SLEEP, SYS_SYSINFO, SYS_POWER, SYS_COUNT
+};
+
+#define E_PERM    1    /* missing capability */
+#define E_NOENT   2    /* no such program / process */
+#define E_FAULT  14    /* bad user pointer */
+#define E_BUSY   16
+#define E_INVAL  22
+#define E_NOSYS  38    /* unknown syscall number */
+#define E_NOMEM  12
+
+/* Capabilities: granted at spawn time, only a subset of the parent's. */
+#define CAP_DISPLAY  (1u << 0)   /* map the framebuffer */
+#define CAP_INPUT    (1u << 1)   /* read keyboard events */
+#define CAP_SPAWN    (1u << 2)   /* start programs */
+#define CAP_POWER    (1u << 3)   /* reboot / power off */
+#define CAP_ALL      0xfu
+
+/* A process killed by a CPU exception exits with EXIT_FAULT | vector. */
+#define EXIT_FAULT 0x100
+
+#define USER_BASE      0x40000000ull   /* 1 GiB: program images are linked here */
+#define USER_FB        0x60000000ull   /* framebuffer mapping (CAP_DISPLAY) */
+#define USER_STACK_TOP 0x7fff0000ull
+#define USER_TOP       0x80000000ull
+
+typedef struct { uint64_t addr; uint32_t width, height, pitch, bpp; } nova_fb_info;
+
+enum { KEY_NONE = 0, KEY_UP = 0x100, KEY_DOWN, KEY_LEFT, KEY_RIGHT, KEY_HOME, KEY_END, KEY_DELETE,
+       KEY_F1, KEY_F2, KEY_SUPER };
+#define KEY_ENTER '\n'
+#define KEY_ESC 27
+#define KEY_BACKSPACE '\b'
+#define KEY_TAB '\t'
+typedef struct { uint16_t key; uint8_t pressed, shift; } nova_input_event;
+
+typedef struct { uint16_t year; uint8_t month, day, hour, minute, second, weekday; } nova_time;
+
+#define POWER_OFF 1
+#define POWER_REBOOT 2
+
+#define BOOT_NORMAL 0
+#define BOOT_RECOVERY 1
+#define BOOT_SAFE 2
+
+typedef struct {
+    uint64_t mem_total, mem_free;     /* bytes */
+    uint64_t ticks, hz;
+    uint32_t tasks, pci_devices, boot_mode, kbd_ok;
+    uint32_t fb_width, fb_height;
+    char version[16];
+    char cpu[48];
+} nova_sysinfo;

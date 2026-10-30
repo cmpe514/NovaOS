@@ -1,138 +1,40 @@
-# NovaOS CI.
-#   checks  every push / PR: shellcheck, Go vet + race tests, UI build, Playwright (preview, device,
-#           visual).                                                               ~5 min
-#   session every push / PR: the real sway session headless (tests/session).      ~5 min
-#   iso     pushes to main, or "Run workflow": builds the ISO in the privileged
-#           builder container and boots it in QEMU/KVM (BIOS, UEFI, two-boot persistence).  ~40-60 min
-#           Uploads logs and screenshots; the ISO itself only when "upload_iso" is ticked (it is large).
+# NovaOS CI: builds the kernel, userspace and bootable image, then boots it in QEMU (BIOS, UEFI and the
+# recovery entry) and drives the UI with real key events. Uploads the serial logs, screenshots and the image.
 name: ci
 on:
   push:
     branches: [main, 'claude/**']
   pull_request:
   workflow_dispatch:
-    inputs:
-      upload_iso:
-        description: Upload the ISO as an artifact (about 1 GB, kept 3 days)
-        type: boolean
-        default: false
-      debug:
-        description: Build a DEBUG=1 image (dev console + SSH)
-        type: boolean
-        default: false
-permissions:
-  contents: read
 concurrency:
   group: ci-${{ github.ref }}
-  # Queue instead of cancelling: an ISO build and boot test is never thrown away half-way.
   cancel-in-progress: false
-
 jobs:
-  checks:
+  qemu-x86_64:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with: { go-version: '1.24', cache-dependency-path: daemon/go.mod }
-      - uses: actions/setup-node@v4
-        with: { node-version: '22' }
-      - name: Tools
-        run: sudo apt-get update && sudo apt-get install -y shellcheck sway grim wtype jq
-      - name: shellcheck
-        run: shellcheck -S warning tools/*.sh image/config/includes.chroot/usr/lib/novaos/* image/config/hooks/normal/* tests/session/session-test.sh image/auto/*
-      - name: Go vet + tests
-        working-directory: daemon
-        run: go vet ./... && go test -race ./...
-      - name: Build UI and novad
-        run: FETCH_ASSETS=0 tools/build-ui.sh && SKIP_TESTS=1 tools/build-daemon.sh
-      - name: Render the live-build tree (dry run)
-        run: NOVA_DRY_RUN=1 tools/build-iso.sh && ! grep -rIl '%%[A-Z_]*%%' build/dry-run-amd64/config build/dry-run-amd64/auto
-      - name: Playwright
-        working-directory: tests
-        run: npm ci && npx playwright install --with-deps chromium && CI=1 npx playwright test
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: |
-            tests/report
-            tests/results
-          retention-days: 7
-
-  session:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with: { go-version: '1.24', cache-dependency-path: daemon/go.mod }
-      - uses: actions/setup-node@v4
-        with: { node-version: '22' }
-      - name: Tools
-        run: sudo apt-get update && sudo apt-get install -y sway grim wtype jq
-      - name: Allow Chromium's user-namespace sandbox (Ubuntu 24.04 restricts it through AppArmor)
-        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 || true
-      - name: Build UI and novad
-        run: FETCH_ASSETS=0 tools/build-ui.sh && SKIP_TESTS=1 tools/build-daemon.sh
-      - name: Chromium
-        working-directory: tests
-        run: npm ci && npx playwright install --with-deps chromium
-      - name: Headless session test (sway + Chromium + novad)
-        timeout-minutes: 8
-        run: NOVA_CHROMIUM="$(find ~/.cache/ms-playwright -path '*chrome-linux*/chrome' -type f | head -1)" tests/session/session-test.sh
-      - name: The shell browser cannot reach the network
-        timeout-minutes: 3
-        run: NOVA_CHROMIUM="$(find ~/.cache/ms-playwright -path '*chrome-linux*/chrome' -type f | head -1)" tests/session/shell-network-test.sh
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: session-results
-          path: tests/results/session
-          retention-days: 7
-
-  iso:
-    needs: checks
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
-    runs-on: ubuntu-24.04
-    timeout-minutes: 150
-    steps:
-      - uses: actions/checkout@v4
-      - name: Free disk space (the build needs ~20 GB)
-        run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
-          sudo docker image prune --all --force
-          df -h /
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
-          ls -l /dev/kvm
+      - name: Install the pinned toolchain
+        run: tools/nova-deps.sh
       - name: make doctor
-        run: make doctor || true
-      - name: make iso
-        run: make iso DEBUG=${{ inputs.debug && '1' || '0' }}
-      - name: Inspect the ISO
+        run: make doctor
+      - name: make image
+        run: make image
+      - name: make test (QEMU, BIOS + UEFI + recovery)
         run: |
-          sudo apt-get install -y xorriso >/dev/null
-          iso="$(ls -t out/*.iso | head -1)"; ls -l "$iso"
-          xorriso -indev "$iso" -find / -maxdepth 2 2>/dev/null | head -60
-          echo "----- /boot/grub/grub.cfg -----"; xorriso -osirrox on -indev "$iso" -extract /boot/grub/grub.cfg /tmp/grub.cfg >/dev/null 2>&1 && cat /tmp/grub.cfg
-      - name: make smoke (BIOS, UEFI, persistence across a clean reboot)
-        run: make smoke
+          if [ -e /dev/kvm ]; then sudo chmod 666 /dev/kvm; fi
+          make test
+      - name: make package
+        run: make package
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: iso-logs
+          name: novaos-qemu-x86_64
           path: |
-            out/*.log
-            out/*.sha256
-            out/*.packages
-            out/smoke
-          retention-days: 7
-      - uses: actions/upload-artifact@v4
-        if: inputs.upload_iso
-        with:
-          name: iso
-          path: out/*.iso
-          retention-days: 3
+            out/test/
+            out/novaos-*.iso
+            out/novaos-*.sha256
+            out/novaos-*.tar.gz
+            out/MANIFEST*.txt
+          retention-days: 14

@@ -1,66 +1,107 @@
-# NovaOS — reproducible build of a Debian-based appliance OS that boots straight into the NovaOS shell.
-# `make help` lists everything. Heavy targets run in a privileged builder container (Docker or Podman);
-# NATIVE=1 runs them on the host instead (Debian 13 only, see docs/BUILDING.md).
-SHELL       := /bin/bash
-.DEFAULT_GOAL := help
-ARCH        ?= amd64
-DEBUG       ?= 0
-NATIVE      ?= 0
-VERBOSE     ?= 0
-export ARCH DEBUG VERBOSE NATIVE
+# NovaOS — own kernel, native shell and Nova Recovery.
+#   make doctor | kernel | image | run | recovery | test | package | theme | clean
+# The previous Debian-based appliance is kept, unmaintained, in legacy.mk (make -f legacy.mk ...).
+ARCH   ?= x86_64
+TARGET ?= qemu-$(ARCH)
+VERSION := 0.2.0-m1
+BUILD  := build/$(ARCH)
+OUT    := out
+ISO    := $(OUT)/novaos-$(VERSION)-$(TARGET).iso
+RISO   := $(OUT)/novaos-$(VERSION)-$(TARGET)-recovery-default.iso
 
-INB := tools/in-builder.sh
-
-.PHONY: help doctor ui daemon dev iso run run-uefi usb test test-go test-ui smoke assets clean distclean zip
-
-help: ## show this help
-	@grep -hE '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  \033[1mmake %-10s\033[0m %s\n", $$1, $$2}'
-	@echo; echo "  Variables: ARCH=amd64|arm64  DEBUG=1 (dev console + SSH)  NATIVE=1 (no container)  VERBOSE=1 (trace)"
-
-doctor: ## check prerequisites and print the exact commands to fix anything missing
-	@tools/doctor.sh
-
-ifeq ($(NATIVE),1)
-ui: ## build the offline shell UI into ui/dist
-	tools/build-ui.sh
-daemon: ## test and build novad (static binary) into daemon/bin
-	tools/build-daemon.sh
-iso: ui daemon ## build the bootable hybrid ISO into out/ (BIOS + UEFI)
-	tools/build-iso.sh
-test-go:
-	cd daemon && go test -race ./...
-test-ui: ui
-	tools/test-ui.sh
-test: test-go test-ui ## run all tests: Go unit tests, Playwright parity/offline/visual/device suites
-smoke: ## boot the ISO headless in QEMU and wait for NOVAOS_READY + a non-blank screenshot
-	tools/smoke-qemu.sh
-else
-ui daemon iso test test-go test-ui smoke:
-	$(INB) $@
+ifneq ($(ARCH),x86_64)
+$(error ARCH=$(ARCH) is not implemented yet. The ARM64 port is milestone M5; see docs/ROADMAP.md)
+endif
+ifneq ($(TARGET),qemu-x86_64)
+$(error TARGET=$(TARGET) is not implemented yet. Supported: qemu-x86_64)
 endif
 
-assets: ## download the original wallpaper/photos (optional; fallback art is bundled)
-	cd ui && node tools/fetch-assets.mjs
+CC  := clang
+LD  := ld.lld
+CFLAGS_COMMON := --target=x86_64-unknown-none-elf -std=c11 -O2 -g -Wall -Wextra -Werror -ffreestanding \
+  -fno-stack-protector -fno-pic -fno-pie -mno-red-zone -mgeneral-regs-only -fno-asynchronous-unwind-tables \
+  -fno-omit-frame-pointer -ffile-prefix-map=$(CURDIR)=. -Iinclude -Ilibs/gfx -Itheme/generated
+KCFLAGS := $(CFLAGS_COMMON) -Ikernel -Iarch/x86_64 -mcmodel=kernel -D__NOVA_KERNEL__
+KCFLAGS := $(filter-out -mcmodel=kernel,$(KCFLAGS))
+UCFLAGS := $(CFLAGS_COMMON) -Ilibs/libnova -Ilibs/novaui
 
-dev: ## run the shell + novad on this desktop (fake device) and open it in Chromium
-	tools/dev.sh
+KSRC := kernel/main.c kernel/lib.c kernel/pmm.c kernel/vmm.c kernel/task.c kernel/syscall.c kernel/elf.c \
+        kernel/panic_screen.c arch/x86_64/cpu.c drivers/pc/serial.c drivers/pc/pic_pit.c drivers/pc/ps2kbd.c \
+        drivers/pc/rtc_pci_power.c libs/gfx/gfx.c
+KASM := arch/x86_64/boot.S arch/x86_64/isr.S
+KOBJ := $(patsubst %,$(BUILD)/k/%.o,$(KSRC) $(KASM)) $(BUILD)/k/programs.o $(BUILD)/k/blobs.o
+LIBNOVA := $(BUILD)/u/libs/libnova/crt0.S.o $(BUILD)/u/libs/libnova/nova.c.o
+LIBUI   := $(BUILD)/u/libs/novaui/novaui.c.o $(BUILD)/u/libs/gfx/gfx.c.o $(BUILD)/u/blobs.o
+PROGS := init shell recovery probe
+HDRS := $(wildcard include/nova/*.h kernel/*.h arch/x86_64/*.h libs/*/*.h) theme/generated/assets.h
 
-run: ## boot the ISO in QEMU (BIOS) with a persistent data disk and sound
-	tools/run-qemu.sh bios
+.PHONY: all doctor kernel image run recovery test package theme clean
+all: image
 
-run-uefi: ## boot the ISO in QEMU (UEFI)
-	tools/run-qemu.sh uefi
+doctor:
+	@tools/nova-doctor.sh
 
-usb: ## write the ISO to a USB stick: make usb DEV=/dev/sdX (asks you to type the device again)
-	@test -n "$(DEV)" || { echo "usage: make usb DEV=/dev/sdX   (find it with: lsblk -d -o NAME,SIZE,MODEL,TRAN)"; exit 2; }
-	sudo tools/write-usb.sh "$(DEV)"
+$(BUILD)/k/%.o: % $(HDRS)
+	@mkdir -p $(dir $@)
+	$(CC) $(KCFLAGS) -c $< -o $@
+$(BUILD)/u/%.o: % $(HDRS)
+	@mkdir -p $(dir $@)
+	$(CC) $(UCFLAGS) -c $< -o $@
+$(BUILD)/k/blobs.o $(BUILD)/u/blobs.o: theme/generated/blobs.S $(wildcard theme/generated/*.bin)
+	@mkdir -p $(dir $@)
+	$(CC) --target=x86_64-unknown-none-elf -Wa,-Itheme/generated -c $< -o $@
 
-zip: ## package the source tree (without build outputs) as out/novaos-src.zip
-	@mkdir -p out && git archive --format=zip -o out/novaos-src.zip HEAD && echo "out/novaos-src.zip"
+$(BUILD)/user/init.elf: $(BUILD)/u/services/init/main.c.o $(LIBNOVA)
+$(BUILD)/user/probe.elf: $(BUILD)/u/tests/kernel/probe.c.o $(LIBNOVA)
+$(BUILD)/user/shell.elf: $(BUILD)/u/shell/main.c.o $(LIBUI) $(LIBNOVA)
+$(BUILD)/user/recovery.elf: $(BUILD)/u/recovery/main.c.o $(LIBUI) $(LIBNOVA)
+$(BUILD)/user/%.elf: libs/libnova/user.ld
+	@mkdir -p $(dir $@)
+	$(LD) -nostdlib -static --build-id=none -T libs/libnova/user.ld -o $@ $(filter %.o,$^)
 
-clean: ## remove build outputs (keeps downloaded caches)
-	rm -rf ui/dist daemon/bin out tests/results tests/report tests/reference/.build tests/.novad .dev-data
+$(BUILD)/k/programs.o: kernel/programs.S $(patsubst %,$(BUILD)/user/%.elf,$(PROGS))
+	$(CC) --target=x86_64-unknown-none-elf -Wa,-I$(BUILD)/user -c $< -o $@
 
-distclean: clean ## also remove node_modules, the live-build tree and the builder volumes
-	rm -rf ui/node_modules tests/node_modules build
-	-docker volume rm novaos-build novaos-cache 2>/dev/null; -podman volume rm novaos-build novaos-cache 2>/dev/null; true
+$(BUILD)/novaos.elf: $(KOBJ) kernel/kernel.ld
+	$(LD) -nostdlib -static --build-id=none -z max-page-size=4096 -T kernel/kernel.ld -o $@ $(KOBJ)
+
+kernel: $(BUILD)/novaos.elf
+
+define mkiso
+	@mkdir -p $(BUILD)/iso-$(2)/boot/grub $(OUT)
+	cp $(BUILD)/novaos.elf $(BUILD)/iso-$(2)/boot/novaos.elf
+	sed -e 's/@TIMEOUT@/$(3)/' -e 's/@DEFAULT@/$(2)/' boot/grub/grub.cfg.in > $(BUILD)/iso-$(2)/boot/grub/grub.cfg
+	SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct 2>/dev/null || echo 0) \
+	  grub-mkrescue -o $(1) $(BUILD)/iso-$(2) -- -volid NOVAOS 2>$(BUILD)/grub-mkrescue-$(2).log \
+	  || { cat $(BUILD)/grub-mkrescue-$(2).log; exit 1; }
+	cd $(OUT) && sha256sum $(notdir $(1)) > $(notdir $(1)).sha256
+endef
+
+$(ISO): $(BUILD)/novaos.elf boot/grub/grub.cfg.in
+	$(call mkiso,$@,0,3)
+$(RISO): $(BUILD)/novaos.elf boot/grub/grub.cfg.in
+	$(call mkiso,$@,1,1)
+
+image: $(ISO)
+	@ls -l $(ISO) && cat $(ISO).sha256
+
+QEMU := qemu-system-x86_64 -m 512 -serial stdio -no-reboot -device VGA
+run: $(ISO)
+	$(QEMU) -cdrom $(ISO)
+run-uefi: $(ISO)
+	$(QEMU) -bios /usr/share/ovmf/OVMF.fd -cdrom $(ISO)
+recovery: $(RISO)
+	$(QEMU) -cdrom $(RISO)
+
+test: $(ISO) $(RISO)
+	python3 tools/nova-test.py --iso $(ISO) --recovery-iso $(RISO) --out $(OUT)/test
+
+package: image $(RISO)
+	tools/nova-package.sh $(VERSION) $(TARGET)
+
+# Regenerate theme/generated from theme/tokens.json (needs the legacy UI build: make -f legacy.mk ui).
+theme:
+	node theme/tools/gen-assets.mjs
+
+clean:
+	rm -rf build/x86_64 $(OUT)/novaos-$(VERSION)-* $(OUT)/test

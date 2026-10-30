@@ -1,6 +1,39 @@
 NovaOS — third-party components and licence obligations
 =======================================================
 
+NovaOS's own code (kernel/, arch/, drivers/, libs/, services/, shell/, recovery/, tools/, tests/) is
+written for this project. It has no licence file yet: the repository owner has to choose one before
+publishing. Until then all rights are reserved by the owner.
+
+1. Shipped inside the NovaOS images (out/novaos-*.iso)
+------------------------------------------------------
+Component              Version (as built)          Licence        Where / role
+GRUB 2 (i386-pc, x86_64-efi), via grub-mkrescue
+                       2.12 (Ubuntu 2.12-1ubuntu7.3)  GPL-3.0+    Bootloader only: loads the NovaOS kernel with
+                                                                    Multiboot2. Text: licenses/GPL-3.0-GRUB.txt
+DM Sans                5.3.0 (@fontsource)         SIL OFL 1.1    Rasterised into theme/generated/font_*.bin
+Space Mono             5.3.0 (@fontsource)         SIL OFL 1.1    Rasterised into theme/generated/font_status.bin
+Lucide icons           0.577.0                     ISC            Rasterised into theme/generated/icons.bin
+Wallpaper              ui/assets/fallback/wallpaper.svg (original art, CC0 1.0), rasterised into wallpaper.bin
+
+The licence texts are in licenses/ and are copied into every image under /licenses.
+Obligations when you DISTRIBUTE an image: GPL-3.0 — offer GRUB's corresponding source (the unmodified
+Debian/Ubuntu "grub2" source package of the version above: `apt-get source grub2`), keep the licence text.
+OFL — fonts are embedded as rendered bitmaps with their licence; the font names are reserved names and
+NovaOS does not ship modified font files. ISC — keep the copyright notice (licenses/lucide-ISC.txt).
+
+2. Build and test tools (not shipped)
+-------------------------------------
+clang/LLVM and lld 18 (Apache-2.0 WITH LLVM-exception), GNU make (GPL-3.0), xorriso (GPL-3.0),
+mtools (GPL-3.0), QEMU (GPL-2.0), OVMF/EDK II (BSD-2-Clause-Patent), Python 3 (PSF), Pillow (MIT-CMU),
+Node.js + Playwright/Chromium (only to regenerate theme/generated: MIT / BSD-3-Clause).
+
+No proprietary firmware is used by the QEMU targets. Phone firmware: see docs/PHONE_PORT.md.
+
+=========================================================================================================
+LEGACY: the previous Debian-based appliance (legacy.mk, docs/legacy/). Kept for reference.
+=========================================================================================================
+
 NovaOS's own code (ui/src, daemon/, image/, tools/, tests/) has no licence file yet: the repository
 owner decides how to license it. Everything below is third-party software that NovaOS builds on or ships.
 

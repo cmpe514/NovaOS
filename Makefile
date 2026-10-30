@@ -70,6 +70,7 @@ kernel: $(BUILD)/novaos.elf
 define mkiso
 	@mkdir -p $(BUILD)/iso-$(2)/boot/grub $(OUT)
 	cp $(BUILD)/novaos.elf $(BUILD)/iso-$(2)/boot/novaos.elf
+	@mkdir -p $(BUILD)/iso-$(2)/licenses && cp licenses/* THIRD_PARTY_LICENSES $(BUILD)/iso-$(2)/licenses/
 	sed -e 's/@TIMEOUT@/$(3)/' -e 's/@DEFAULT@/$(2)/' boot/grub/grub.cfg.in > $(BUILD)/iso-$(2)/boot/grub/grub.cfg
 	SOURCE_DATE_EPOCH=$$(git log -1 --format=%ct 2>/dev/null || echo 0) \
 	  grub-mkrescue -o $(1) $(BUILD)/iso-$(2) -- -volid NOVAOS 2>$(BUILD)/grub-mkrescue-$(2).log \
